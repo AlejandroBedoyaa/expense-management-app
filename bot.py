@@ -2,12 +2,18 @@
 """
 Telegram Bot for Expense Management
 Handles receipt image processing and expense creation via Telegram.
+
+Command to run:
+    python bot.py
 """
 
+from app.utils.logging_config import setup_logging
+setup_logging()
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 import os
+import sys
 import tempfile
 import asyncio
 from datetime import date
@@ -16,20 +22,21 @@ from dotenv import load_dotenv
 # Import from our refactored structure
 from app import create_app
 from app.services.expense_service import expense_service
-from app.utils.helpers import delete_file
+from app.utils.helpers import delete_file, clean_image
 from app.utils.validators import validate_image_file
 from app.utils.messages_templates import (welcome_message, help_message, data_message, edit_message, handle_message)
 
 # Load environment variables
 load_dotenv()
 FLASK_ENV = os.getenv('FLASK_ENV', 'development')
+
 # Create Flask app context for database operations
 flask_app = create_app(FLASK_ENV)
 
 # Get Telegram bot token from config
 TOKEN = flask_app.config.get('TELEGRAM_BOT_TOKEN')
 
-# Esto estará fuera de la clase ExpenseBot
+# Temporary storage for user expense data during editing
 TEMP_EXPENSE = {}
 
 class ExpenseBot:
@@ -91,7 +98,9 @@ class ExpenseBot:
 
         # Prepare response message
         message = data_message(expense_data)
+        await self.reply_text(update, message)
 
+        message = edit_message()
         await self.reply_text(update, message)
 
     async def save_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -100,7 +109,7 @@ class ExpenseBot:
             await self.reply_text(update, "Nothing to save, please upload a receipt first.")
             return
 
-        expense_data = TEMP_EXPENSE.pop(user_id)  # Remueve para evitar duplicación
+        expense_data = TEMP_EXPENSE.pop(user_id)  # Remove after saving to avoid duplication
         with flask_app.app_context():
             try:
                 expense = expense_service.create_expense(expense_data)
@@ -126,6 +135,7 @@ class ExpenseBot:
             validation = validate_image_file(os.path.basename(temp_path))
 
             if not validation['valid']:
+                logging.warning(f"Invalid file uploaded: {validation['errors']}")
                 await self.reply_text(update, f"❌ Invalid file: {', '.join(validation['errors'])}")
                 delete_file(temp_path)
                 return
@@ -134,7 +144,7 @@ class ExpenseBot:
             with flask_app.app_context():
                 try:
                     # Clean and preprocess the receipt image
-                    #temp_path = clean_image(temp_path)
+                    # temp_path = clean_image(temp_path)
 
                     # Extract data using OCR
                     expense_data = expense_service.process_receipt_image(temp_path)
@@ -176,7 +186,7 @@ class ExpenseBot:
 def main():
     """Main function to run the bot."""
     if not TOKEN:
-        logging.error("Error: TELEGRAM_BOT_TOKEN not found in environment variables")
+        logging.error("Error: Telegram token not found in environment variables")
         logging.info("Make sure to configure your token in the .env file")
         return
     

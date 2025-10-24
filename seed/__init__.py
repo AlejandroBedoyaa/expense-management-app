@@ -1,0 +1,1 @@
+from .seed_store_categories import seed_store_categories

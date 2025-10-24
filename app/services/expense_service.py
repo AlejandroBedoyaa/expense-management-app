@@ -1,3 +1,6 @@
+"""
+Service layer for managing expenses and processing receipts.
+"""
 import json
 from app.models.expense import Expense
 from app.extensions import db
@@ -28,7 +31,7 @@ class ExpenseService:
     @staticmethod
     def get_all_expenses(limit: int = None) -> List[Expense]:
         """Get all expenses, optionally limited."""
-        query = Expense.query.order_by(Expense.created_date.desc())
+        query = Expense.query.order_by(Expense.created_at.desc())
         if limit:
             query = query.limit(limit)
         return query.all()
@@ -36,14 +39,14 @@ class ExpenseService:
     @staticmethod
     def get_expenses_by_category(category: str) -> List[Expense]:
         """Get expenses filtered by category."""
-        return Expense.query.filter_by(category=category).order_by(Expense.created_date.desc()).all()
+        return Expense.query.filter_by(category=category).order_by(Expense.created_at.desc()).all()
     
     @staticmethod
     def get_expenses_by_date_range(start_date: date, end_date: date) -> List[Expense]:
         """Get expenses within a date range."""
         return Expense.query.filter(
-            Expense.created_date.between(start_date, end_date)
-        ).order_by(Expense.created_date.desc()).all()
+            Expense.created_at.between(start_date, end_date)
+        ).order_by(Expense.created_at.desc()).all()
     
     @staticmethod
     def update_expense(expense_id: int, data: Dict) -> Optional[Expense]:
@@ -95,10 +98,10 @@ class ExpenseService:
 
             # Prepare expense data
             expense_data = {
-                'payment_concept': receipt_data.get('payment_concept') or 'Receipt',
+                'payment_concept': receipt_data.get('payment_concept').upper() or 'RECEIPT',
                 'subtotal': receipt_data.get('subtotal') or 0.0,
-                'category': 'uncategorized',
-                'tax': receipt_data.get('tax') or 0.16,
+                'category': receipt_data.get('category').lower() or 'uncategorized',
+                'tax': receipt_data.get('tax') or 16,
                 'total': receipt_data.get('total') or 0.0,
                 'payment_date': parse_date(receipt_data.get('payment_date') or date.today()),
             }
@@ -114,7 +117,7 @@ class ExpenseService:
             return expense_data
             
         except Exception as e:
-            raise Exception(f"Error processing receipt: {str(e)}")
+            raise Exception(f"{str(e)}")
     
     @staticmethod
     def _save_receipt_image(image_path: str) -> str:
@@ -161,8 +164,8 @@ class ExpenseService:
         # Group by month
         monthly_totals = {}
         for expense in expenses:
-            if expense.created_date:
-                month_key = expense.created_date.strftime('%Y-%m')
+            if expense.created_at:
+                month_key = expense.created_at.strftime('%Y-%m')
                 if month_key not in monthly_totals:
                     monthly_totals[month_key] = 0.0
                 monthly_totals[month_key] += expense.total

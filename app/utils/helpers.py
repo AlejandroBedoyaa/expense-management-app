@@ -2,11 +2,13 @@
 Helper utilities for the expense management application.
 """
 
-import os
-import secrets
-from datetime import datetime, date
-from typing import Dict, Any, Optional, Union
 import logging
+import os
+import re
+import secrets
+import difflib
+from datetime import datetime, date
+from typing import Dict, Any, List, Optional, Union
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageEnhance
 
@@ -23,9 +25,9 @@ def format_currency(amount: Union[int, float], currency: str = '$') -> str:
     """Format amount as currency."""
     return f"{currency}{amount:,.2f}"
 
-def format_tax(tax_rate: float = 0.16) -> str:
+def format_tax(tax_rate: float = 16) -> str:
     """Format tax rate as percentage string."""
-    return f"{tax_rate * 100:.2f}%"
+    return f"{tax_rate}%"
 
 def clean_image(image_path: str) -> str:
     """Clean and preprocess the receipt image."""
@@ -71,6 +73,52 @@ def format_log_json(data: Dict[str, Any]) -> str:
     """Format dictionary as JSON string for logging."""
     import json
     return json.dumps(data, indent=2, default=str)
+
+
+def extract_highest_amount(lines: List[str], patterns: List[str]) -> Optional[float]:
+    """Extract the highest monetary amount from lines based on patterns."""
+    amounts = []
+    for line in lines:
+        for pat in patterns:
+            match = re.search(r'(?i)\b\d+[.,]\d{2}\b', line)
+            if match:
+                try:
+                    amounts.append(float(match.group().replace(',', '.')))
+                except ValueError:
+                    continue
+    return max(amounts) if amounts else None
+
+def extract_amount_from_lines(lines: List[str], word: str, patterns: List[str]) -> Optional[str]:
+    """Extract amount associated with a specific word from lines."""
+    for line in lines:
+        if re.search(rf'(?i){word}', line):
+            for pat in patterns:
+                match = re.search(pat, line)
+                if match:
+                    return match.group(1)
+    return None
+
+def fuzzy_store_matching(line, store_dict, threshold=0.8):
+    """Find close matches in OCR line."""
+    results = difflib.get_close_matches(line.upper(), store_dict.keys(), n=1, cutoff=threshold)
+    if results:
+        store = results[0]
+        return store, store_dict[store]
+    return None, None
+
+def match_store(lines, store_keywords):
+    """Match store keywords in OCR lines."""
+    store_keywords = {k.strip(): v for k, v in store_keywords.items()}
+    for line in lines[:5]:
+        upper_line = line.upper().strip()
+        for keyword in store_keywords:
+            if keyword in upper_line:
+                return keyword, store_keywords[keyword]
+        # Fuzzy matching
+        fuzzy_store, group = fuzzy_store_matching(upper_line, store_keywords)
+        if fuzzy_store:
+            return fuzzy_store, group
+    return None, None
 
 # TODO: Not in use yet
 def get_upload_path(filename: str, subfolder: str = 'receipts') -> str:

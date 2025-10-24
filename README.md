@@ -1,213 +1,151 @@
-# 🤖 Expense Management Telegram Bot
+# 💰 Expense Management Bot
 
-An intelligent expense tracking system that uses **OCR technology** to automatically process receipt images via Telegram bot and provides a complete **REST API** for expense management.
+Telegram bot para gestión automática de gastos usando OCR en recibos con API REST Flask.
 
-## 📋 Overview
+## 📝 Descripción
 
-This project combines a **Telegram bot interface** with a **Flask REST API** to create a comprehensive expense management solution. Users can photograph receipts, send them to the bot, and the system automatically extracts expense data using advanced OCR processing. The application features a professional Flask architecture with services, models, and API endpoints.
+Envía fotos de recibos al bot de Telegram → Extracción automática por OCR → Edita datos → Guarda en base de datos. Incluye API REST completa para gestión y análisis de gastos.
 
-## ✨ Key Features
+**Características principales:**
+- 📸 Procesamiento OCR de recibos (PaddleOCR)
+- 🤖 Bot de Telegram interactivo
+- 🔧 API REST completa (operaciones CRUD)
+- 💾 Base de datos MySQL con SQLAlchemy
+- 📊 Análisis y estadísticas de gastos
 
-### 🤖 **Telegram Bot**
-- � **Smart Receipt Processing**: Upload photos → Automatic OCR extraction
-- ✏️ **Interactive Editing**: Edit extracted data before saving (`/edit` command)
-- 💾 **Save Expenses**: Confirm and save to database (`/save` command)
-- 📊 **Quick Commands**: `/start`, `/help`, `/edit`, `/save`
+## 🛠 Stack Tecnológico
 
-### 🔧 **REST API**
-- 📋 **CRUD Operations**: Complete expense management via API
-- � **Receipt Upload**: `POST /api/expenses/upload-receipt`
-- � **Statistics**: `GET /api/expenses/statistics`
-- 🔍 **Filtering**: Filter by category, date ranges
-- 📊 **JSON Responses**: Structured data for integrations
+- **Flask** - Framework web con patrón factory
+- **SQLAlchemy** - ORM para base de datos
+- **PaddleOCR** - Extracción de texto (Español)
+- **python-telegram-bot** - Framework de bot asíncrono
+- **Pillow/** - Procesamiento de imágenes
 
-### 🧠 **OCR Intelligence**
-- 🏪 **Merchant Detection**: Automatic store/restaurant name extraction
-- � **Amount Recognition**: Total, subtotal, and tax extraction
-- 📅 **Date Parsing**: Multiple date format support
-- 🏷️ **Smart Categorization**: Automatic expense categorization
+## ⚡ Instalación Rápida
 
-## 🛠 Technology Stack
+### Prerrequisitos
+- Python 3.8+
+- Token de bot de Telegram ([@BotFather](https://t.me/BotFather))
 
-- **Backend**: Flask (Factory Pattern)
-- **Database**: SQLAlchemy with migrations support
-- **OCR Engine**: EasyOCR (Spanish & English)
-- **Bot Framework**: python-telegram-bot (async)
-- **Image Processing**: Pillow
-- **Architecture**: Services, Models, Blueprints, Utilities
+### Configuración
 
-## 📦 Quick Start
-
-### Prerequisites
-
-- Python 3.8 or higher
-- Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
-- Virtual environment recommended
-
-### Installation
-
-1. **Clone and setup**
-
-   ```bash
-   git clone <repository-url>
-   cd expense-management-app
-   python -m venv venv
-   venv\Scripts\activate  # Windows
-   # source venv/bin/activate  # Linux/Mac
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configure environment**
-
-   Create `.env` file:
-
-   ```env
-   FLASK_ENV=development
-   SECRET_KEY=your-super-secret-key-here
-   TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-   DATABASE_URL=sqlite:///expenses.db
-   ```
-
-4. **Initialize database**
-
-   ```bash
-   python init_db.py
-   ```
-
-### Running the Application
-
-1. **Start Flask API** (Terminal 1)
-
-   ```bash
-   python run.py
-   ```
-
-2. **Start Telegram Bot** (Terminal 2)
-
-   ```bash
-   python bot.py
-   ```
-
-## 🤖 Bot Usage
-
-### Available Commands
-
-- **`/start`** - Welcome message and setup
-- **`/help`** - Show all available commands  
-- **`/edit <field> <value>`** - Edit extracted data
-- **`/save`** - Save expense to database
-
-### Workflow
-
-1. 📸 **Send receipt photo** to bot
-2. 🔍 **Review extracted data** (merchant, total, date)  
-3. ✏️ **Edit if needed**: `/edit total 25.50`
-4. 💾 **Save**: `/save` to confirm and store
-
-## � REST API Endpoints
-
-### Expense Management
-
-- **`GET /api/expenses`** - List all expenses (with filtering)
-- **`GET /api/expenses/{id}`** - Get specific expense
-- **`POST /api/expenses`** - Create new expense
-- **`PUT /api/expenses/{id}`** - Update expense
-- **`DELETE /api/expenses/{id}`** - Delete expense
-
-### Receipt Processing
-
-- **`POST /api/expenses/upload-receipt`** - Upload & process receipt image
-- **`GET /api/expenses/statistics`** - Get expense analytics
-
-### Example API Usage
-
+1. **Clonar y configurar entorno:**
 ```bash
-# Upload receipt for processing
-curl -X POST -F "file=@receipt.jpg" http://localhost:5000/api/expenses/upload-receipt
-
-# Get expense statistics  
-curl http://localhost:5000/api/expenses/statistics
+git clone <repo-url>
+cd expense-management-app
+python -m venv venv
+# For Windows (Powershell or CMD) use
+venv\Scripts\activate 
+# For Unix or if you console its GitBash use:
+source venv\Scripts\activate  
+pip install -r requirements.txt
 ```
 
-## 🏗️ Project Architecture
+2. **Configurar variables de entorno:**
+Crear archivo `.env`:
+```env
+FLASK_ENV=development
+PORT=5000
+HOST=127.0.0.1
+TELEGRAM_BOT_TOKEN=tu_token_de_telegram_aqui
+DATABASE_URL=mysql+pymysql://user:password@localhost:PORT/mydb
+LOG_BOT_FILE=logs/bot.log
+LOG_BOT_EXTERNAL_LIBS_FILE=logs/external_libs.log
+UPLOAD_FOLDER=uploads/receipts
+MAX_CONTENT_LENGTH=16 * 1024 * 1024  # 16MB max file size
+```
+
+3. **Inicializar base de datos:**
+```bash
+flask db init
+flask db migrate -m "Initial migration"
+flask db upgrate
+```
+
+## 🚀 Ejecución
+
+**Terminal 1 - API Flask:**
+```bash
+python run.py
+```
+
+**Terminal 2 - Bot Telegram:**
+```bash
+python bot.py
+```
+
+## 🤖 Comandos del Bot
+
+| Comando | Descripción |
+|---------|-------------|
+| `/start` | Inicializar bot |
+| `/help` | Mostrar ayuda |
+| `/edit <campo> <valor>` | Editar datos extraídos |
+| `/save` | Guardar gasto en BD |
+| Enviar foto | Procesar recibo automáticamente |
+
+## 🔗 API Endpoints
+
+- `GET /api/expenses` - Listar gastos
+- `POST /api/expenses` - Crear gasto
+- `POST /api/expenses/upload-receipt` - Subir recibo
+- `GET /api/expenses/statistics` - Obtener estadísticas
+
+## 📁 Estructura del Proyecto
 
 ```
 expense-management-app/
 ├── app/
-│   ├── __init__.py          # Flask app factory
-│   ├── config.py            # Multi-environment config
-│   ├── extensions.py        # SQLAlchemy, Flask-Migrate
-│   ├── api/                 # REST API blueprints
-│   │   └── expenses.py      # Expense endpoints
-│   ├── models/              # SQLAlchemy models
-│   │   └── expense.py       # Expense model
-│   ├── services/            # Business logic
-│   │   ├── ocr_service.py   # OCR processing
-│   │   └── expense_service.py # Expense operations
-│   └── utils/               # Helpers & validators
-├── uploads/receipts/        # Receipt image storage
-├── bot.py                   # Telegram bot (refactored)
-├── run.py                   # Flask app entry point
-└── init_db.py              # Database initialization
+│   ├── __init__.py          # Factory Flask
+│   ├── config.py            # Configuración
+│   ├── models/              # Modelos SQLAlchemy
+│   ├── services/            # Lógica de negocio
+│   ├── api/                 # Endpoints REST
+│   └── utils/               # Utilidades
+├── bot.py                   # Bot de Telegram
+├── run.py                   # Servidor Flask
+└── init_db.py              # Inicializar BD
 ```
 
-## 📊 Database Schema
+## 🔧 Configuración
 
-**Expense Model:**
-- `payment_concept` - Merchant/store name
-- `note` - Additional description  
-- `category` - Expense category
-- `subtotal` - Amount before tax
-- `tax` - Tax amount/rate
-- `total` - Final amount
-- `file_path` - Receipt image path
-- `payment_date` - Transaction date
-- `created_date` - Record creation date
+### Variables de Entorno Requeridas
 
-## 📈 Future Enhancements
+- `TELEGRAM_BOT_TOKEN` - Token del bot (obligatorio)
+- `SECRET_KEY` - Clave secreta de Flask
+- `DATABASE_URL` - URL de base de datos
+- `FLASK_ENV` - Entorno (development/production)
 
-- [ ] Receipt data validation and editing
-- [ ] Expense analytics and reporting
-- [ ] Multi-currency support
-- [ ] Integration with accounting software
-- [ ] Monthly/yearly expense summaries
-- [ ] Budget tracking and alerts
-- [ ] Export functionality (CSV, PDF)
-- [ ] Multiple receipt formats support
-- [ ] AI-powered expense categorization
+### Configuración Opcional
 
-## 🤝 Contributing
+- `UPLOAD_FOLDER` - Directorio para recibos (default: uploads/receipts)
+- `MAX_CONTENT_LENGTH` - Tamaño máx. archivo (default: 16MB)
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## 📊 Flujo de Trabajo
 
-## 📄 License
+1. **Enviar foto** de recibo al bot
+2. **OCR automático** extrae: concepto, total, fecha
+3. **Revisar datos** extraídos
+4. **Editar si necesario:** `/edit total 25.50`
+5. **Confirmar:** `/save` para guardar en BD
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 🚨 Solución de Problemas
 
-## 🆘 Support
+**Bot no responde:**
+```bash
+# Verificar token
+python -c "import os; from dotenv import load_dotenv; load_dotenv(); print(os.getenv('TELEGRAM_BOT_TOKEN'))"
+```
 
-If you encounter any issues or have questions:
+**Error de BD:**
+```bash
+flask db init
+```
 
-1. Check the [Issues](https://github.com/your-repo/issues) page
-2. Create a new issue with detailed information
-3. Provide sample images (with sensitive information removed)
+## 📄 Licencia
 
-## 🙏 Acknowledgments
-
-- [EasyOCR](https://github.com/JaidedAI/EasyOCR) for excellent OCR capabilities
-- [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) for the robust Telegram bot framework
-- [Flask](https://flask.palletsprojects.com/) for the lightweight web framework
-- [SQLAlchemy](https://www.sqlalchemy.org/) for database management
+MIT License
 
 ---
 
-**Note**: Remember to keep your bot token secure and never commit it to version control. Always use environment variables for sensitive configuration.
+**¡Gestiona tus gastos fácilmente! 📱💳**

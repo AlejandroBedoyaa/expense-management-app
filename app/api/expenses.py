@@ -1,6 +1,8 @@
+"""
+API routes for managing expenses.
+"""
 from flask import Blueprint, request, jsonify
 from app.services.expense_service import expense_service
-from app.services.ocr_service import ocr_service
 from werkzeug.utils import secure_filename
 import os
 import tempfile

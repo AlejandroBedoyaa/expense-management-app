@@ -1,4 +1,8 @@
-from app.utils.helpers import escape_markdown, format_currency, format_tax
+"""
+Message templates for the Expense Management Bot.
+"""
+
+from app.utils.helpers import format_tax, format_currency
 
 def welcome_message() -> str:
     message = """🤖 <b>Welcome to the Expense Management Bot</b>"""
@@ -7,10 +11,11 @@ def welcome_message() -> str:
 
 def help_message() -> str:
     message = """
-        📸 <b>Send a photo of your receipt</b> and I will automatically extract the relevant information.
+        📸 <b>Send a photo of your receipt</b>
+        I will automatically extract the relevant information.
 
         📋 <b>Bot Commands:</b>
-        /edit - Edit an existing expense using: /edit &lt;field&gt; &lt;value&gt;
+        /edit - Edit the data: /edit &lt;field&gt; &lt;value&gt;
         /save - Confirm and save the last processed expense
         /help - Show this help
 
@@ -26,8 +31,8 @@ def help_message() -> str:
 
 def data_message(data: dict) -> str:
     message = "✅ <b>Ticket processed successfully!</b>\n\n"
-    message += f"<b>payment_concept</b>: {data['payment_concept']}\n"
-    message += f"<b>category</b>: {data['category']}\n"
+    message += f"<b>payment_concept</b>: {data['payment_concept'].capitalize()}\n"
+    message += f"<b>category</b>: {data['category'].capitalize()}\n"
     if data.get('note'):
         message += f"<b>note</b>: {data['note']}\n"
     else:

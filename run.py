@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Entry point for the Expense Management Flask application.
+Entry point for the Dashboard Expense Management Flask application.
 """
 
 import os

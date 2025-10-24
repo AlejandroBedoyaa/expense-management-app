@@ -1,9 +1,11 @@
+"""
+Expense model for storing expense records.
+"""
 from app.extensions import db
 from datetime import date
 from sqlalchemy import Column, Integer, Float, String, Date
 
 class Expense(db.Model):
-    """Expense model for storing expense records."""
     
     __tablename__ = 'expenses'
     
@@ -12,11 +14,11 @@ class Expense(db.Model):
     note = Column(String(500), nullable=True)
     category = Column(String(50), nullable=True)
     subtotal = Column(Float, default=0.0)
-    tax = Column(Float, default=0.16)  # Tax/IVA percentage
+    tax = Column(Float, default=16)  # Tax/IVA percentage
     total = Column(Float, nullable=True)
     file_path = Column(String(255), nullable=True)  # Path to receipt image
     payment_date = Column(Date, default=date.today)
-    created_date = Column(Date, default=date.today)
+    created_at = Column(Date, default=date.today)
     
     def __repr__(self):
         return f'<Expense {self.payment_concept}: ${self.total}>'
@@ -33,7 +35,7 @@ class Expense(db.Model):
             'total': self.total,
             'file_path': self.file_path,
             'payment_date': self.date.isoformat() if self.date else None,
-            'created_date': self.created_date.isoformat() if self.created_date else None
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
     
     @classmethod
@@ -44,9 +46,9 @@ class Expense(db.Model):
             note=data.get('note'),
             category=data.get('category'),
             subtotal=data.get('subtotal', 0.0),
-            tax=data.get('tax', 0.16),
+            tax=data.get('tax', 16),
             total=data.get('total'),
             file_path=data.get('file_path'),
             payment_date=data.get('payment_date', date.today()),
-            created_date=data.get('created_date', date.today()),
+            created_at=data.get('created_at', date.today()),
         )
