@@ -1,7 +1,6 @@
 """
 Service layer for managing expenses and processing receipts.
 """
-import json
 from app.models.expense import Expense
 from app.extensions import db
 from app.services.ocr_service import ocr_service
@@ -29,9 +28,9 @@ class ExpenseService:
         return Expense.query.get(expense_id)
     
     @staticmethod
-    def get_all_expenses(limit: int = None) -> List[Expense]:
-        """Get all expenses, optionally limited."""
-        query = Expense.query.order_by(Expense.created_at.desc())
+    def get_all_expenses(user_id: str = None, limit: int = 10) -> List[Expense]:
+        """Get all expenses for a user, optionally limited."""
+        query = Expense.query.filter_by(user_id=user_id).order_by(Expense.created_at.desc())
         if limit:
             query = query.limit(limit)
         return query.all()
@@ -81,11 +80,12 @@ class ExpenseService:
         return True
     
     @staticmethod
-    def process_receipt_image(image_path: str, save_image: bool = True) -> Dict:
+    def process_receipt_image(user_id: str, image_path: str, save_image: bool = True) -> Dict:
         """
         Process receipt image using OCR and return extracted data.
         
         Args:
+            user_id: ID of the user
             image_path: Path to the receipt image
             save_image: Whether to save the image to uploads directory
             
@@ -93,6 +93,7 @@ class ExpenseService:
             Dictionary with extracted expense data
         """
         try:
+            
             # Extract data using OCR
             receipt_data = ocr_service.extract_receipt_data(image_path)
 
@@ -100,10 +101,11 @@ class ExpenseService:
             expense_data = {
                 'payment_concept': receipt_data.get('payment_concept').upper() or 'RECEIPT',
                 'subtotal': receipt_data.get('subtotal') or 0.0,
-                'category': receipt_data.get('category').lower() or 'uncategorized',
+                'category': (receipt_data.get('category') or 'uncategorized').lower(),
                 'tax': receipt_data.get('tax') or 16,
                 'total': receipt_data.get('total') or 0.0,
                 'payment_date': parse_date(receipt_data.get('payment_date') or date.today()),
+                'user_id': user_id
             }
 
             # Save image if requested

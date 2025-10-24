@@ -35,9 +35,9 @@ git clone <repo-url>
 cd expense-management-app
 python -m venv venv
 # For Windows (Powershell or CMD) use
-venv\Scripts\activate 
-# For Unix or if you console its GitBash use:
-source venv\Scripts\activate  
+.\venv\Scripts\activate
+# For Bash or Linux/Mac use:
+source venv/Scripts/activate
 pip install -r requirements.txt
 ```
 

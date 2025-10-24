@@ -4,28 +4,29 @@ Message templates for the Expense Management Bot.
 
 from app.utils.helpers import format_tax, format_currency
 
-def welcome_message() -> str:
-    message = """🤖 <b>Welcome to the Expense Management Bot</b>"""
+def welcome_message(telegram_user_name: str) -> str:
+    message = f"🤖 <b>Welcome {telegram_user_name}, to the Expense Management Bot</b>"
 
     return message
 
 def help_message() -> str:
     message = """
-        📸 <b>Send a photo of your receipt</b>
-        I will automatically extract the relevant information.
+    📸 <b>Send a photo of your receipt</b>
+    I will automatically extract the relevant information.
 
-        📋 <b>Bot Commands:</b>
-        /edit - Edit the data: /edit &lt;field&gt; &lt;value&gt;
-        /save - Confirm and save the last processed expense
-        /help - Show this help
+    📋 <b>Bot Commands:</b>
+    /edit - Edit the data: /edit &lt;field&gt; &lt;value&gt;
+    /save - Confirm and save the last processed expense
+    /list - List your saved expenses
+    /help - Show this help
 
-        <b>How does it work?</b>
-        1. Take a clear photo of your receipt
-        2. Send it to the bot
-        3. The bot will automatically extract the data
-        4. It will be saved in your personal database
+    <b>How does it work?</b>
+    1. Take a clear photo of your receipt
+    2. Send it to the bot
+    3. The bot will automatically extract the data
+    4. It will be saved in your personal database
 
-        💡 <b>Tip</b>: Make sure the photo is clear and well-lit for best results.
+    💡 <b>Tip</b>: Make sure the photo is clear and well-lit for best results.
     """
     return message
 
@@ -54,8 +55,8 @@ def edit_message() -> str:
 def handle_message() -> str:
     """Handle /help command."""
     message = """
-            📝 I can only process receipt images or valid commands.\n\n
-            📸 Please send a photo of your receipt or command, so I can assist you.\n
-            💡 Use /help to see all available commands.
+    📝 I can only process receipt images or valid commands.\n\n
+    📸 Please send a photo of your receipt or command, so I can assist you.\n
+    💡 Use /help to see all available commands.
     """
     return message

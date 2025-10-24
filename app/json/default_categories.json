@@ -1,0 +1,21 @@
+[
+    {"store_name": "RECEIPT", "category": "uncategorized"}, 
+    {"store_name": "OXXO", "category": "conveniencia"},
+    {"store_name": "CHEDRAUI", "category": "supermercado"},
+    {"store_name": "SORIAN", "category": "supermercado"},
+    {"store_name": "SORIANA", "category": "supermercado"},
+    {"store_name": "WALMART", "category": "supermercado"},
+    {"store_name": "SEVEN ELEVEN", "category": "conveniencia"},
+    {"store_name": "FARMACIAS DEL AHORRO", "category": "farmacia"},
+    {"store_name": "FARMACIA GUADALAJARA", "category": "farmacia"},
+    {"store_name": "STARBUCKS", "category": "restaurante"},
+    {"store_name": "VIPS", "category": "restaurante"},
+    {"store_name": "SANBORNS", "category": "restaurante"},
+    {"store_name": "BURGER KING", "category": "restaurante"},
+    {"store_name": "AMAZON", "category": "compras en línea"},
+    {"store_name": "MERCADO LIBRE", "category": "compras en línea"},
+    {"store_name": "AT&T", "category": "internet"},
+    {"store_name": "CFE", "category": "servicios"},
+    {"store_name": "COMISION FEDERAL DE ELECTRICIDAD", "category": "servicios"},
+    {"store_name": "TOTALPLAY", "category": "internet"}
+]

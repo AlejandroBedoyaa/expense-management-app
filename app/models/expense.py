@@ -1,15 +1,17 @@
 """
 Expense model for storing expense records.
 """
+import uuid
 from app.extensions import db
 from datetime import date
-from sqlalchemy import Column, Integer, Float, String, Date
+from sqlalchemy import Column, Float, String, Date, ForeignKey
+from sqlalchemy.orm import relationship
 
 class Expense(db.Model):
     
     __tablename__ = 'expenses'
     
-    id = Column(Integer, primary_key=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     payment_concept = Column(String(100), nullable=True)
     note = Column(String(500), nullable=True)
     category = Column(String(50), nullable=True)
@@ -19,6 +21,8 @@ class Expense(db.Model):
     file_path = Column(String(255), nullable=True)  # Path to receipt image
     payment_date = Column(Date, default=date.today)
     created_at = Column(Date, default=date.today)
+    user_id = Column(String(36), ForeignKey('users.id'), nullable=False)
+    user = relationship("User", back_populates="expenses")
     
     def __repr__(self):
         return f'<Expense {self.payment_concept}: ${self.total}>'
@@ -34,8 +38,9 @@ class Expense(db.Model):
             'tax': self.tax,
             'total': self.total,
             'file_path': self.file_path,
-            'payment_date': self.date.isoformat() if self.date else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'payment_date': self.payment_date.isoformat() if self.payment_date else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'user_id': self.user_id
         }
     
     @classmethod
@@ -51,4 +56,5 @@ class Expense(db.Model):
             file_path=data.get('file_path'),
             payment_date=data.get('payment_date', date.today()),
             created_at=data.get('created_at', date.today()),
+            user_id=data.get('user_id')
         )

@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 # Import from our refactored structure
 from app import create_app
 from app.services.expense_service import expense_service
+from app.services.user_service import user_service
 from app.utils.helpers import delete_file, clean_image
 from app.utils.validators import validate_image_file
 from app.utils.messages_templates import (welcome_message, help_message, data_message, edit_message, handle_message)
@@ -53,6 +54,7 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("help", self.help_command))
         self.app.add_handler(CommandHandler("edit", self.edit_command))
         self.app.add_handler(CommandHandler("save", self.save_command))
+        self.app.add_handler(CommandHandler("list", self.list_command))
         self.app.add_handler(MessageHandler(filters.PHOTO, self.handle_photo))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text))
     
@@ -62,7 +64,8 @@ class ExpenseBot:
 
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command."""
-        message = welcome_message()
+        telegram_user_name = update.effective_user.first_name or "there"
+        message = welcome_message(telegram_user_name)
         message += help_message()
         await self.reply_text(update, message)
 
@@ -72,9 +75,9 @@ class ExpenseBot:
         await self.reply_text(update, message)
     
     async def edit_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
+        telegram_user_id = update.effective_user.id
         args = context.args
-        if user_id not in TEMP_EXPENSE:
+        if telegram_user_id not in TEMP_EXPENSE:
             await self.reply_text(update, "Nothing to edit, first send a receipt photo.")
             return
         if len(args) < 2:
@@ -82,7 +85,7 @@ class ExpenseBot:
             return
         campo = args[0].lower()
         valor = " ".join(args[1:])
-        if campo not in TEMP_EXPENSE[user_id]:
+        if campo not in TEMP_EXPENSE[telegram_user_id]:
             await self.reply_text(update, f"Field '{campo}' does not exist or cannot be edited.")
             return
         # Try to convert the value if it's total/subtotal/tax
@@ -93,8 +96,8 @@ class ExpenseBot:
             pass
 
         # Update the temporary field
-        TEMP_EXPENSE[user_id][campo] = valor
-        expense_data = TEMP_EXPENSE[user_id]
+        TEMP_EXPENSE[telegram_user_id][campo] = valor
+        expense_data = TEMP_EXPENSE[telegram_user_id]
 
         # Prepare response message
         message = data_message(expense_data)
@@ -104,26 +107,50 @@ class ExpenseBot:
         await self.reply_text(update, message)
 
     async def save_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        if user_id not in TEMP_EXPENSE:
+        telegram_user_id = update.effective_user.id
+        if telegram_user_id not in TEMP_EXPENSE:
             await self.reply_text(update, "Nothing to save, please upload a receipt first.")
             return
 
-        expense_data = TEMP_EXPENSE.pop(user_id)  # Remove after saving to avoid duplication
+        expense_data = TEMP_EXPENSE.pop(telegram_user_id)  # Remove after saving to avoid duplication
         with flask_app.app_context():
             try:
                 expense = expense_service.create_expense(expense_data)
-                logging.info(f"Expense saved: ID {expense.id} for User {user_id} with data {expense_data}")
+                logging.info(f"Expense saved: ID {expense.id} for User {telegram_user_id} with data {expense_data}")
                 await self.reply_text(update, f"✅ Expense saved successfully!\n\n")
             except Exception as e:
                 logging.error(f"Error saving expense: {str(e)}")
                 await self.reply_text(update, f"❌ Error saving expense: {str(e)}")
 
+    async def list_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        telegram_user_id = update.effective_user.id
+        with flask_app.app_context():
+            try:
+                user = user_service.get_user_by_telegram_id(telegram_user_id)
+                if not user:
+                    await self.reply_text(update, "No expenses found.")
+                    return
+                expenses = expense_service.get_all_expenses(user_id=user.id)
+                if not expenses:
+                    await self.reply_text(update, "No expenses found.")
+                    return
+                
+                message = "📋 <b>Your Expenses:</b>\n\n"
+                for exp in expenses:
+                    message += f"• ID: {exp.id}, Concept: {exp.payment_concept}, Total: ${exp.total:.2f}, Date: {exp.payment_date}\n"
+                
+                await self.reply_text(update, message)
+            except Exception as e:
+                logging.error(f"Error retrieving expenses: {str(e)}")
+                await self.reply_text(update, f"❌ Error retrieving expenses: {str(e)}")
+
     async def handle_photo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle photo messages - process receipt images."""
         await self.reply_text(update, "📸 Image received. Processing receipt... ⏳")
 
+
         try:
+            
             # Download photo
             photo_file = await update.message.photo[-1].get_file()
             # Create temporary file
@@ -143,11 +170,14 @@ class ExpenseBot:
             # Process receipt with Flask app context
             with flask_app.app_context():
                 try:
+                    # Get or create user
+                    user = user_service.get_or_create_user(update)
+
                     # Clean and preprocess the receipt image
                     # temp_path = clean_image(temp_path)
 
                     # Extract data using OCR
-                    expense_data = expense_service.process_receipt_image(temp_path)
+                    expense_data = expense_service.process_receipt_image(user.id, temp_path)
 
                     # Clean up temporary file
                     delete_file(temp_path)
@@ -156,8 +186,8 @@ class ExpenseBot:
                     message = data_message(expense_data)
                     await self.reply_text(update, message)
 
-                    user_id = update.effective_user.id
-                    TEMP_EXPENSE[user_id] = expense_data
+                    telegram_user_id = update.effective_user.id
+                    TEMP_EXPENSE[telegram_user_id] = expense_data
 
                     message = edit_message()
                     await self.reply_text(update, message)
