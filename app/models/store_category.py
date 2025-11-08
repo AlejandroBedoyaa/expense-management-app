@@ -15,6 +15,8 @@ class StoreCategory(db.Model):
     store_name = Column(String(100), nullable=False, unique=True)
     category = Column(String(50), nullable=False)
     created_at = Column(Date, default=date.today)
+    updated_at = Column(Date, default=date.today, onupdate=date.today)
+
     user_id = Column(String(36), ForeignKey('users.id'), nullable=False)
     user = relationship("User", back_populates="store_categories")
     
@@ -28,6 +30,7 @@ class StoreCategory(db.Model):
             'store_name': self.store_name,
             'category': self.category,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'user_id': self.user_id
         }
     
@@ -38,5 +41,7 @@ class StoreCategory(db.Model):
             store_name=data.get('store_name'),
             category=data.get('category'),
             created_at=data.get('created_at', date.today()),
+            updated_at=data.get('updated_at', date.today()),
+            
             user_id=data.get('user_id')
         )

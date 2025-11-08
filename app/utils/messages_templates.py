@@ -18,6 +18,8 @@ def help_message() -> str:
     /edit - Edit the data: /edit &lt;field&gt; &lt;value&gt;
     /save - Confirm and save the last processed expense
     /list - List your saved expenses
+    /income - Add a new income entry: /income &lt;source&gt; &lt;amount&gt; &lt;description&gt; -r &lt;recurrence_type&gt; &lt;income_day&gt;
+    /incomes - List your income entries
     /help - Show this help
 
     <b>How does it work?</b>
@@ -50,6 +52,41 @@ def edit_message() -> str:
     message += f"Send <b>/edit</b> &lt;field&gt; &lt;value&gt;\n"
     message += f"Send <b>/save</b> to confirm the data\n"
 
+    return message
+
+def income_command(data: dict) -> str:
+    """Handle /income command."""
+    message = f"<b>amount</b>: {format_currency(data.amount)}\n"
+    message += f"<b>source</b>: {data.source.capitalize()}\n"
+    message += f"<b>is_recurring</b>: {'Yes' if data.is_recurring else 'No'}\n"
+    if data.is_recurring:
+        message += f"<b>recurrence_type</b>: {data.recurrence_type.capitalize()}\n"
+        message += f"<b>income_day</b>: {data.income_day}\n"
+
+    if data.description:
+        message += f"<b>description</b>: {data.description}\n"
+    else:
+        message += f"<b>description</b>: --\n"
+
+    return message
+
+def income_help_message() -> str:
+    """Help message for /income command."""
+    message = """
+    📥 <b>Add a new income entry</b>
+    Use the command format:
+    /income &lt;source&gt; &lt;amount&gt; -r &lt;is_recurring&gt; &lt;type&gt; &lt;income_day&gt; &lt;description&gt;
+
+    <b>Parameters:</b>
+    - <b>source</b>: Source of the income (e.g., Salary, Freelance)
+    - <b>amount</b>: Amount received
+    - <b>recurrence_type</b>: (Optional) Type of income (e.g., monthly, biweekly, weekly, daily)
+    - <b>income_day</b>: (Optional) Day of the month the income is received (1-31)
+    - <b>description</b>: (Optional) Description of the income
+
+    <b>Example:</b>
+    /income Salary 1500 -r yes monthly 5 "June Salary"
+    """
     return message
 
 def handle_message() -> str:

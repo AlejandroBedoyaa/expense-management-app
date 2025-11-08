@@ -57,9 +57,10 @@ MAX_CONTENT_LENGTH=16 * 1024 * 1024  # 16MB max file size
 
 3. **Inicializar base de datos:**
 ```bash
+flask --app expenses_db init-db 
 flask db init
 flask db migrate -m "Initial migration"
-flask db upgrate
+flask db upgrade
 ```
 
 ## 🚀 Ejecución

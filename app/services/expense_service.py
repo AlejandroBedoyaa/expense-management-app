@@ -23,7 +23,7 @@ class ExpenseService:
         return expense
     
     @staticmethod
-    def get_expense_by_id(expense_id: int) -> Optional[Expense]:
+    def get_expense_by_id(expense_id: str) -> Optional[Expense]:
         """Get expense by ID."""
         return Expense.query.get(expense_id)
     
@@ -48,7 +48,7 @@ class ExpenseService:
         ).order_by(Expense.created_at.desc()).all()
     
     @staticmethod
-    def update_expense(expense_id: int, data: Dict) -> Optional[Expense]:
+    def update_expense(expense_id: str, data: Dict) -> Optional[Expense]:
         """Update an existing expense."""
         expense = Expense.query.get(expense_id)
         if not expense:
@@ -62,7 +62,7 @@ class ExpenseService:
         return expense
     
     @staticmethod
-    def delete_expense(expense_id: int) -> bool:
+    def delete_expense(expense_id: str) -> bool:
         """Delete an expense by ID."""
         expense = Expense.query.get(expense_id)
         if not expense:

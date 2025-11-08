@@ -7,6 +7,7 @@ Command to run:
     python bot.py
 """
 
+from multiprocessing import context
 from app.utils.logging_config import setup_logging
 setup_logging()
 import logging
@@ -23,9 +24,10 @@ from dotenv import load_dotenv
 from app import create_app
 from app.services.expense_service import expense_service
 from app.services.user_service import user_service
+from app.services.income_service import income_service
 from app.utils.helpers import delete_file, clean_image
 from app.utils.validators import validate_image_file
-from app.utils.messages_templates import (welcome_message, help_message, data_message, edit_message, handle_message)
+from app.utils.messages_templates import (income_command, income_help_message, welcome_message, help_message, data_message, edit_message, handle_message)
 
 # Load environment variables
 load_dotenv()
@@ -56,6 +58,8 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("save", self.save_command))
         self.app.add_handler(CommandHandler("list", self.list_command))
         self.app.add_handler(MessageHandler(filters.PHOTO, self.handle_photo))
+        self.app.add_handler(CommandHandler("income", self.income_command))
+        self.app.add_handler(CommandHandler("incomes", self.incomes_command))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text))
     
     async def reply_text(self, update: Update, text: str, parse_mode: str = 'HTML'):
@@ -200,6 +204,130 @@ class ExpenseBot:
         except Exception as e:
             logging.error(f"Error downloading image: {str(e)}")
             await self.reply_text(update, f"❌ Error downloading image: {str(e)}")
+
+    async def income_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /income command."""
+        telegram_user_id = update.effective_user.id
+        args = context.args
+        with flask_app.app_context():
+            try:
+                # Get or create user
+                user = user_service.get_or_create_user(update)
+
+                if not context.args or len(context.args) < 2:
+                    await self.reply_text(update, "Invalid format.")
+                    await self.reply_text(update, income_help_message())
+                    return
+                
+                source = context.args[0]       
+                try:
+                    amount = float(context.args[1])
+                except ValueError:
+                    await self.reply_text(update, f"❌ The amount must be a valid number: {context.args[1]}")
+                    logging.error(f"Invalid amount for income: {context.args[1]}")
+                    return
+                
+                is_recurring = False
+                recurrence_type = None
+                income_day = None
+                description = None
+
+                args_list = list(context.args[2:])
+
+                if '-r' in args_list:
+                    is_recurring = True
+                    r_index = args_list.index('-r')
+                    
+                    # Validate enough arguments for recurrence
+                    if len(args_list) < r_index + 3:
+                        await self.reply_text(update, "❌ Not enough arguments for recurring income.")
+                        logging.error(f"Not enough arguments for recurring income: {args_list}")
+                        return
+                    
+                    recurrence_type = args_list[r_index + 1].lower()
+                    
+                    # Validate recurrence type
+                    valid_types = ['monthly', 'biweekly', 'weekly', 'daily']
+                    if recurrence_type not in valid_types:
+                        await self.reply_text(update, 
+                            f"❌ Invalid recurrence type: `{recurrence_type}`\n\n"
+                            f"Valid types: {', '.join(valid_types)}",
+                        )
+                        logging.error(f"Invalid recurrence type for income: {recurrence_type}")
+                        return
+                    
+                    income_day_str = args_list[r_index + 2]
+                    
+                    # Validate income day(s)
+                    try:
+                        if ',' in income_day_str:
+                            # Multiple days (for biweekly: 1,15)
+                            income_day = int(income_day_str.split(',')[0])  # Keep the first one
+                        else:
+                            income_day = int(income_day_str)
+                        
+                        if income_day < 1 or income_day > 31:
+                            await self.reply_text(update, "❌ The day must be between 1 and 31.")
+                            logging.error(f"Invalid income day for income: {income_day}")
+                            return
+                            
+                    except ValueError:
+                        await self.reply_text(update, "❌ The day must be a valid number.")
+                        logging.error(f"Invalid income day value: {income_day_str}")
+                        return
+                    
+                    # Description is everything after
+                    if len(args_list) > r_index + 3:
+                        description = ' '.join(args_list[r_index + 3:])
+                else:
+                    # No recurrence, description is everything
+                    description = ' '.join(args_list) if args_list else None
+                
+                # Create income
+                income_data = {
+                    'user_id': user.id,
+                    'source': source,
+                    'amount': amount,
+                    'description': description,
+                    'is_recurring': is_recurring,
+                    'recurrence_type': recurrence_type,
+                    'income_day': income_day
+                }
+
+                income = income_service.create_income(income_data)
+                logging.info(f"Income saved for User {user.id} with data {income}")
+                message = "✅ <b>Income Saved successfully!</b>\n\n"
+                await self.reply_text(update, message)
+                message = income_command(income)
+                await self.reply_text(update, message)
+            except Exception as e:
+                logging.error(f"Error saving income: {str(e)}")
+                await self.reply_text(update, f"❌ Error saving income: {str(e)}")
+
+    async def incomes_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /incomes command."""
+        with flask_app.app_context():
+            try:
+                # Get or create user
+                user = user_service.get_or_create_user(update)
+                if not user:
+                    await self.reply_text(update, "No incomes found.")
+                    return
+                
+                incomes = income_service.get_incomes_by_user_id(user.id)
+                if not incomes:
+                    await self.reply_text(update, "No incomes found."   )
+                    return
+
+                message = "📋 <b>Your Incomes:</b>\n\n"
+                await self.reply_text(update, message) 
+                for inc in incomes:
+                    message = income_command(inc) + "\n"
+                    await self.reply_text(update, message)  
+                
+            except Exception as e:
+                logging.error(f"Error retrieving incomes: {str(e)}")
+                await self.reply_text(update, f"❌ Error retrieving incomes: {str(e)}")
 
     async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages."""
