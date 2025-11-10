@@ -5,7 +5,7 @@ Budget model for managing user budgets in different categories.
 import uuid
 from app.extensions import db
 from datetime import date
-from sqlalchemy import Column, Float, String, Date, ForeignKey, Integer
+from sqlalchemy import Column, DateTime, Float, String, Date, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 class Budget(db.Model):
@@ -17,8 +17,8 @@ class Budget(db.Model):
     month = Column(Integer, nullable=False)  # 1-12
     year = Column(Integer, nullable=False)
     budget_amount = Column(Float, nullable=False)
-    created_at = Column(Date, default=date.today)
-    updated_at = Column(Date, default=date.today, onupdate=date.today)
+    created_at = Column(DateTime, default=date.today)
+    updated_at = Column(DateTime, default=date.today, onupdate=date.today)
 
     user = relationship("User", back_populates="budgets")
     

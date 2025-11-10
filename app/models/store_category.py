@@ -4,7 +4,7 @@ StoreCategory model for storing store and category mappings.
 import uuid
 from app.extensions import db
 from datetime import date
-from sqlalchemy import Column, String, Date, ForeignKey
+from sqlalchemy import Column, DateTime, String, Date, ForeignKey
 from sqlalchemy.orm import relationship
 
 class StoreCategory(db.Model):
@@ -14,8 +14,8 @@ class StoreCategory(db.Model):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     store_name = Column(String(100), nullable=False, unique=True)
     category = Column(String(50), nullable=False)
-    created_at = Column(Date, default=date.today)
-    updated_at = Column(Date, default=date.today, onupdate=date.today)
+    created_at = Column(DateTime, default=date.today)
+    updated_at = Column(DateTime, default=date.today, onupdate=date.today)
 
     user_id = Column(String(36), ForeignKey('users.id'), nullable=False)
     user = relationship("User", back_populates="store_categories")

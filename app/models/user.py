@@ -1,7 +1,7 @@
 from app.extensions import db
 import uuid
 from datetime import date
-from sqlalchemy import Column, String, Date
+from sqlalchemy import Column, DateTime, String, Date
 from sqlalchemy.orm import relationship
 
 class User(db.Model):
@@ -10,8 +10,8 @@ class User(db.Model):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     telegram_id = Column(String(32), unique=True, nullable=False)
     username = Column(String(128), nullable=True)
-    created_at = Column(Date, default=date.today)
-    updated_at = Column(Date, default=date.today, onupdate=date.today)
+    created_at = Column(DateTime, default=date.today)
+    updated_at = Column(DateTime, default=date.today, onupdate=date.today)
 
     expenses = relationship("Expense", back_populates="user")
     store_categories = relationship("StoreCategory", back_populates="user")

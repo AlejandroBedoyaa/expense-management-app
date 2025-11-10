@@ -4,11 +4,13 @@ from .expense_service import ExpenseService, expense_service
 from .story_category_service import StoreCategoryService
 from .user_service import UserService, user_service
 from .income_service import IncomeService, income_service
+from .balance_service import BalanceService, balance_service
 
 __all__ = [
     'OCRService', 'ocr_service',
     'ExpenseService', 'expense_service',
     'StoreCategoryService',
     'UserService', 'user_service',
-    'IncomeService', 'income_service'
+    'IncomeService', 'income_service',
+    'BalanceService', 'balance_service'
 ]

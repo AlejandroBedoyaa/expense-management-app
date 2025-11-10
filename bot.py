@@ -17,7 +17,7 @@ import os
 import sys
 import tempfile
 import asyncio
-from datetime import date
+from datetime import date, datetime
 from dotenv import load_dotenv
 
 # Import from our refactored structure
@@ -25,9 +25,11 @@ from app import create_app
 from app.services.expense_service import expense_service
 from app.services.user_service import user_service
 from app.services.income_service import income_service
-from app.utils.helpers import delete_file, clean_image
+from app.services.balance_service import balance_service
+from app.utils.helpers import delete_file, clean_image, parse_date
 from app.utils.validators import validate_image_file
-from app.utils.messages_templates import (income_command, income_help_message, welcome_message, help_message, data_message, edit_message, handle_message)
+from app.utils.messages_templates import (income_command, income_help_message, welcome_message, help_message, expense_message,
+                                        edit_message, handle_message, balance_message, summary_message)
 
 # Load environment variables
 load_dotenv()
@@ -58,8 +60,11 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("save", self.save_command))
         self.app.add_handler(CommandHandler("list", self.list_command))
         self.app.add_handler(MessageHandler(filters.PHOTO, self.handle_photo))
+        self.app.add_handler(CommandHandler("expense", self.expense_command))
         self.app.add_handler(CommandHandler("income", self.income_command))
         self.app.add_handler(CommandHandler("incomes", self.incomes_command))
+        self.app.add_handler(CommandHandler("balance", self.balance_command))
+        self.app.add_handler(CommandHandler("summary", self.summary_command))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text))
     
     async def reply_text(self, update: Update, text: str, parse_mode: str = 'HTML'):
@@ -104,7 +109,7 @@ class ExpenseBot:
         expense_data = TEMP_EXPENSE[telegram_user_id]
 
         # Prepare response message
-        message = data_message(expense_data)
+        message = expense_message(expense_data)
         await self.reply_text(update, message)
 
         message = edit_message()
@@ -187,7 +192,9 @@ class ExpenseBot:
                     delete_file(temp_path)
 
                     # Prepare response message
-                    message = data_message(expense_data)
+                    message = "✅ <b>Ticket processed successfully!</b>\n\n"
+                    await self.reply_text(update, message)
+                    message = expense_message(expense_data)
                     await self.reply_text(update, message)
 
                     telegram_user_id = update.effective_user.id
@@ -204,6 +211,65 @@ class ExpenseBot:
         except Exception as e:
             logging.error(f"Error downloading image: {str(e)}")
             await self.reply_text(update, f"❌ Error downloading image: {str(e)}")
+
+    async def expense_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle manual expense entry."""
+
+        with flask_app.app_context():
+            try:
+                # Get or create user
+                user = user_service.get_or_create_user(update)
+
+                args = context.args
+                if not args or len(args) < 3:
+                    await self.reply_text(update, "Invalid format.")
+                    return
+                
+                payment_concept = args[0]
+                try:
+                    total = float(args[1])
+                except ValueError:
+                    await self.reply_text(update, f"❌ The total must be a valid number: {args[1]}")
+                    logging.error(f"Invalid total for expense: {args[1]}")
+                    return
+                
+                try:
+                    # Validate format DD-MM (day-month)
+                    day, month = map(int, args[2].split('-'))
+                    current_year = date.today().year
+                    payment_date = date(current_year, month, day)
+                except ValueError:
+                    await self.reply_text(update, f"❌ The date must be in DD-MM format: {args[2]}")
+                    logging.error(f"Invalid date for expense: {args[2]}")
+                    return
+                
+                category = args[3] if len(args) >= 4 else 'uncategorized'
+                tax = 16.0
+                subtotal = total / (tax / 100 + 1)
+                # Prepare expense data
+                expense_data = {
+                    'user_id': user.id,
+                    'payment_concept': payment_concept.upper(),
+                    'total': total,
+                    'payment_date': parse_date(payment_date or date.today()),
+                    'category': category.lower(),
+                    'tax': tax,
+                    'subtotal': subtotal
+                }
+                
+                # Prepare response message
+                message = expense_message(expense_data)
+                await self.reply_text(update, message)
+
+                telegram_user_id = update.effective_user.id
+                TEMP_EXPENSE[telegram_user_id] = expense_data
+
+                message = edit_message()
+                await self.reply_text(update, message)
+                
+            except Exception as e:
+                logging.error(f"Error saving expense: {str(e)}")
+                await self.reply_text(update, f"❌ Error saving expense: {str(e)}")
 
     async def income_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /income command."""
@@ -227,61 +293,25 @@ class ExpenseBot:
                     logging.error(f"Invalid amount for income: {context.args[1]}")
                     return
                 
-                is_recurring = False
-                recurrence_type = None
-                income_day = None
+                income_date = date.today()
                 description = None
 
-                args_list = list(context.args[2:])
-
-                if '-r' in args_list:
-                    is_recurring = True
-                    r_index = args_list.index('-r')
-                    
-                    # Validate enough arguments for recurrence
-                    if len(args_list) < r_index + 3:
-                        await self.reply_text(update, "❌ Not enough arguments for recurring income.")
-                        logging.error(f"Not enough arguments for recurring income: {args_list}")
-                        return
-                    
-                    recurrence_type = args_list[r_index + 1].lower()
-                    
-                    # Validate recurrence type
-                    valid_types = ['monthly', 'biweekly', 'weekly', 'daily']
-                    if recurrence_type not in valid_types:
-                        await self.reply_text(update, 
-                            f"❌ Invalid recurrence type: `{recurrence_type}`\n\n"
-                            f"Valid types: {', '.join(valid_types)}",
-                        )
-                        logging.error(f"Invalid recurrence type for income: {recurrence_type}")
-                        return
-                    
-                    income_day_str = args_list[r_index + 2]
-                    
-                    # Validate income day(s)
+                if len(args) >= 3:
+                    income_date_str = args[2]
+                    # Validate income date
                     try:
-                        if ',' in income_day_str:
-                            # Multiple days (for biweekly: 1,15)
-                            income_day = int(income_day_str.split(',')[0])  # Keep the first one
-                        else:
-                            income_day = int(income_day_str)
-                        
-                        if income_day < 1 or income_day > 31:
-                            await self.reply_text(update, "❌ The day must be between 1 and 31.")
-                            logging.error(f"Invalid income day for income: {income_day}")
-                            return
-                            
+                        # Validate format DD-MM (day-month)
+                        day, month = map(int, income_date_str.split('-'))
+                        current_year = date.today().year
+                        income_date = date(current_year, month, day)
+                        if len(args) > 3:
+                            description = ' '.join(args[3:])
                     except ValueError:
-                        await self.reply_text(update, "❌ The day must be a valid number.")
-                        logging.error(f"Invalid income day value: {income_day_str}")
-                        return
-                    
-                    # Description is everything after
-                    if len(args_list) > r_index + 3:
-                        description = ' '.join(args_list[r_index + 3:])
-                else:
-                    # No recurrence, description is everything
-                    description = ' '.join(args_list) if args_list else None
+                        description = ' '.join(args[2:])
+
+                elif len(args) == 2:
+                    # No income date provided, use today's date
+                    pass
                 
                 # Create income
                 income_data = {
@@ -289,9 +319,7 @@ class ExpenseBot:
                     'source': source,
                     'amount': amount,
                     'description': description,
-                    'is_recurring': is_recurring,
-                    'recurrence_type': recurrence_type,
-                    'income_day': income_day
+                    'income_date': income_date
                 }
 
                 income = income_service.create_income(income_data)
@@ -322,12 +350,48 @@ class ExpenseBot:
                 message = "📋 <b>Your Incomes:</b>\n\n"
                 await self.reply_text(update, message) 
                 for inc in incomes:
+                    print(inc)
                     message = income_command(inc) + "\n"
                     await self.reply_text(update, message)  
                 
             except Exception as e:
                 logging.error(f"Error retrieving incomes: {str(e)}")
                 await self.reply_text(update, f"❌ Error retrieving incomes: {str(e)}")
+
+    async def balance_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Handle /balance command - Show current month balance
+        """
+        with flask_app.app_context():
+            try:
+                user = user_service.get_or_create_user(update)
+                
+                balance_data = balance_service.get_current_balance(user.id)
+
+                message = balance_message(balance_data)
+                
+                await self.reply_text(update, message)
+                
+            except Exception as e:
+                logging.error(f"Error in balance_command: {str(e)}")
+                await self.reply_text(update, "❌ Error to calculate balance.")
+
+    async def summary_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Handle /resumen command - Show financial summary with categories
+        """
+        with flask_app.app_context():
+            try:
+                user = user_service.get_or_create_user(update)
+                
+                summary = balance_service.get_financial_summary(user.id)
+                balance_data = summary['balance']
+
+                message = summary_message(summary, balance_data)
+                await self.reply_text(update, message)                
+            except Exception as e:
+                logging.error(f"Error in summary_command: {str(e)}")
+                await self.reply_text(update, "❌ Error to generate summary.")
 
     async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages."""

@@ -18,8 +18,10 @@ def help_message() -> str:
     /edit - Edit the data: /edit &lt;field&gt; &lt;value&gt;
     /save - Confirm and save the last processed expense
     /list - List your saved expenses
-    /income - Add a new income entry: /income &lt;source&gt; &lt;amount&gt; &lt;description&gt; -r &lt;recurrence_type&gt; &lt;income_day&gt;
+    /income - Add a new income entry: /income &lt;source&gt; &lt;amount&gt; &lt;description&gt; -r &lt;recurrence_type&gt; &lt;income_date&gt;
     /incomes - List your income entries
+    /balance - Show your current balance
+    /summary - Show a summary of your expenses and incomes
     /help - Show this help
 
     <b>How does it work?</b>
@@ -32,9 +34,8 @@ def help_message() -> str:
     """
     return message
 
-def data_message(data: dict) -> str:
-    message = "✅ <b>Ticket processed successfully!</b>\n\n"
-    message += f"<b>payment_concept</b>: {data['payment_concept'].capitalize()}\n"
+def expense_message(data: dict) -> str:
+    message = f"<b>payment_concept</b>: {data['payment_concept'].capitalize()}\n"
     message += f"<b>category</b>: {data['category'].capitalize()}\n"
     if data.get('note'):
         message += f"<b>note</b>: {data['note']}\n"
@@ -56,17 +57,16 @@ def edit_message() -> str:
 
 def income_command(data: dict) -> str:
     """Handle /income command."""
-    message = f"<b>amount</b>: {format_currency(data.amount)}\n"
-    message += f"<b>source</b>: {data.source.capitalize()}\n"
-    message += f"<b>is_recurring</b>: {'Yes' if data.is_recurring else 'No'}\n"
-    if data.is_recurring:
-        message += f"<b>recurrence_type</b>: {data.recurrence_type.capitalize()}\n"
-        message += f"<b>income_day</b>: {data.income_day}\n"
+    message = f"<b>source</b>: {data.source.capitalize()}\n"
+    message += f"<b>amount</b>: {format_currency(data.amount)}\n"
+    message += f"<b>income_date</b>: {data.income_date.strftime('%d/%m/%Y')}\n"
 
     if data.description:
         message += f"<b>description</b>: {data.description}\n"
     else:
         message += f"<b>description</b>: --\n"
+
+    message += f"<b>created_at</b>: {data.created_at.strftime('%d/%m/%Y %H:%M:%S')}\n"
 
     return message
 
@@ -75,18 +75,67 @@ def income_help_message() -> str:
     message = """
     📥 <b>Add a new income entry</b>
     Use the command format:
-    /income &lt;source&gt; &lt;amount&gt; -r &lt;is_recurring&gt; &lt;type&gt; &lt;income_day&gt; &lt;description&gt;
+    /income &lt;source&gt; &lt;amount&gt; &lt;income_date&gt; &lt;description&gt;
 
     <b>Parameters:</b>
     - <b>source</b>: Source of the income (e.g., Salary, Freelance)
     - <b>amount</b>: Amount received
-    - <b>recurrence_type</b>: (Optional) Type of income (e.g., monthly, biweekly, weekly, daily)
-    - <b>income_day</b>: (Optional) Day of the month the income is received (1-31)
+    - <b>income_date</b>: (Optional) Date of income (day of month for monthly, day of week for weekly/biweekly)
     - <b>description</b>: (Optional) Description of the income
 
     <b>Example:</b>
-    /income Salary 1500 -r yes monthly 5 "June Salary"
+    /income Salary 1500 15-11 "June Salary"
     """
+    return message
+
+def balance_message(data: dict) -> str:
+    """Generate balance summary message."""
+    month_names = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    message = f"📊 <b>Balance Summary for {month_names[data['month']]} {data['year']}</b>\n\n"
+    message += f"📥 <b>Total Incomes:</b> {format_currency(data['total_incomes'])}\n"
+    message += f"📤 <b>Total Expenses:</b> {format_currency(data['total_expenses'])}\n"
+    message += "─" * 30 + "\n"
+    message += f"🔄 <b>Net Balance:</b> {format_currency(data['balance'])}\n"
+
+    balance = data['balance']
+    if balance >= 0:
+        message += f"✅ <b>Balance:</b> ${balance:,.2f}\n"
+        message += f"📊 <b>Save:</b> {data['balance_percentage']:.1f}%"
+    else:
+        message += f"⚠️ <b>Balance:</b> -${abs(balance):,.2f}\n"
+        message += f"📊 <b>Deficit:</b> {abs(data['balance_percentage']):.1f}%"
+
+    return message
+
+def summary_message(summary: dict, data: dict) -> str:
+    """Generate financial summary message."""
+    month_names = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    message = f"📊 <b>Financial Summary for {month_names[data['month']]} {data['year']}</b>\n\n"
+    message += f"📈 Ingresos: ${data['total_incomes']:,.2f}\n"
+    message += f"📉 Gastos: ${data['total_expenses']:,.2f}\n"
+
+    balance = data['balance']
+    if balance >= 0:
+        message += f"✅ Balance: ${balance:,.2f}\n\n"
+    else:
+        message += f"⚠️ Balance: -${abs(balance):,.2f}\n\n"
+    
+    # Top categorías de gasto
+    if summary['top_categories']:
+        message += "<b>🏆 Top Gastos por Categoría:</b>\n"
+        for category, summary_data in summary['top_categories']:
+            percentage = (summary_data['total'] / data['total_expenses'] * 100) if data['total_expenses'] > 0 else 0
+            message += f"  • {category.capitalize()}: ${summary_data['total']:,.2f} ({percentage:.1f}%)\n"
+    
+
     return message
 
 def handle_message() -> str:
