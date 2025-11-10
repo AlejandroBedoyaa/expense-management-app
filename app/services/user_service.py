@@ -51,5 +51,14 @@ class UserService:
     def get_user_by_telegram_id(telegram_id: str) -> User:
         """Retrieve a user by their Telegram ID."""
         return User.query.filter_by(telegram_id=telegram_id).first()
+    
+    @staticmethod
+    def update_accumulated_balance(user_id: str, amount: float):
+        """Update the accumulated balance for a user."""
+        user = User.query.get(user_id)
+        if user:
+            user.accumulated_balance += amount
+            db.session.commit()
+        return user
 
 user_service = UserService()

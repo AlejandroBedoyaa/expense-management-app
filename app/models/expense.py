@@ -3,7 +3,7 @@ Expense model for storing expense records.
 """
 import uuid
 from app.extensions import db
-from datetime import date
+from datetime import date, datetime
 from sqlalchemy import Column, DateTime, Float, String, Date, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -20,8 +20,8 @@ class Expense(db.Model):
     total = Column(Float, nullable=True)
     file_path = Column(String(255), nullable=True)  # Path to receipt image
     payment_date = Column(Date, default=date.today)
-    created_at = Column(DateTime, default=date.today)
-    updated_at = Column(DateTime, default=date.today, onupdate=date.today)
+    created_at = Column(DateTime, default=datetime.today())
+    updated_at = Column(DateTime, default=datetime.today(), onupdate=datetime.today())
     user_id = Column(String(36), ForeignKey('users.id'), nullable=False)
     user = relationship("User", back_populates="expenses")
     
@@ -57,7 +57,7 @@ class Expense(db.Model):
             total=data.get('total'),
             file_path=data.get('file_path'),
             payment_date=data.get('payment_date', date.today()),
-            created_at=data.get('created_at', date.today()),
-            updated_at=data.get('updated_at', date.today()),
+            created_at=data.get('created_at', datetime.today()),
+            updated_at=data.get('updated_at', datetime.today()),
             user_id=data.get('user_id')
         )

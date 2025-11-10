@@ -43,7 +43,7 @@ def setup_logging():
 
     os.environ["GLOG_minloglevel"] = "2"
     os.environ["FLAGS_log_level"] = "3"
-    os.environ["PADDLE_LOG_LEVEL"] = "ERROR"
+    os.environ["PADDLE_LOG_LEVEL"] = "INFO"
     os.environ["KMP_WARNINGS"] = "FALSE"
 
     logging.info("Logger initialized.")

@@ -3,7 +3,7 @@ Income model for storing income records.
 """
 import uuid
 from app.extensions import db
-from datetime import date
+from datetime import date, datetime
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -15,8 +15,8 @@ class Income(db.Model):
     amount = Column(Float, nullable=False)
     income_date = Column(Date, default=date.today)
     description = Column(String(500), nullable=True, default=None)
-    created_at = Column(DateTime, default=date.today)
-    updated_at = Column(DateTime, default=date.today, onupdate=date.today)
+    created_at = Column(DateTime, default=datetime.today())
+    updated_at = Column(DateTime, default=datetime.today(), onupdate=datetime.today())
 
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="incomes")
@@ -45,7 +45,7 @@ class Income(db.Model):
             amount=data.get("amount"),
             income_date=data.get("income_date", date.today()),
             description=data.get("description", None),
-            created_at=data.get("created_at", date.today()),
-            updated_at=data.get("updated_at", date.today()),
+            created_at=data.get("created_at", datetime.today()),
+            updated_at=data.get("updated_at", datetime.today()),
             user_id=data.get("user_id"),
         )

@@ -110,6 +110,7 @@ class ExpenseBot:
 
         # Prepare response message
         message = expense_message(expense_data)
+        logging.info(f"Expense message edited for User {telegram_user_id}: {message}")
         await self.reply_text(update, message)
 
         message = edit_message()
@@ -131,6 +132,17 @@ class ExpenseBot:
                 logging.error(f"Error saving expense: {str(e)}")
                 await self.reply_text(update, f"❌ Error saving expense: {str(e)}")
 
+            try:
+                # Update user's accumulated balance
+                user = user_service.get_user_by_telegram_id(str(telegram_user_id))
+                if user:
+                    user_upd = user_service.update_accumulated_balance(user.id, -expense.total)
+                    logging.info(f"Updated accumulated balance for User {user.id}")
+                    await self.reply_text(update, f"✅ New balance: {user_upd.accumulated_balance:.2f}.")
+            except Exception as e:
+                logging.error(f"Error updating accumulated balance: {str(e)}")
+                await self.reply_text(update, f"❌ Error updating user accumulated balance: {str(e)}")
+
     async def list_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user_id = update.effective_user.id
         with flask_app.app_context():
@@ -145,6 +157,7 @@ class ExpenseBot:
                     return
                 
                 message = "📋 <b>Your Expenses:</b>\n\n"
+                logging.info(f"Expenses for User {user.id}: {expenses}")
                 for exp in expenses:
                     message += f"• ID: {exp.id}, Concept: {exp.payment_concept}, Total: ${exp.total:.2f}, Date: {exp.payment_date}\n"
                 
@@ -332,6 +345,17 @@ class ExpenseBot:
                 logging.error(f"Error saving income: {str(e)}")
                 await self.reply_text(update, f"❌ Error saving income: {str(e)}")
 
+            try:
+                # Update user's accumulated balance
+                user = user_service.get_user_by_telegram_id(str(telegram_user_id))
+                if user:
+                    user_upd = user_service.update_accumulated_balance(user.id, amount)
+                    logging.info(f"Updated accumulated balance for User {user.id}")
+                    await self.reply_text(update, f"✅ New balance: {user_upd.accumulated_balance:.2f}.")
+            except Exception as e:
+                logging.error(f"Error updating accumulated balance: {str(e)}")
+                await self.reply_text(update, f"❌ Error updating user accumulated balance: {str(e)}")
+
     async def incomes_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /incomes command."""
         with flask_app.app_context():
@@ -348,9 +372,9 @@ class ExpenseBot:
                     return
 
                 message = "📋 <b>Your Incomes:</b>\n\n"
+                logging.info(f"Incomes for User {user.id}: {incomes}")
                 await self.reply_text(update, message) 
                 for inc in incomes:
-                    print(inc)
                     message = income_command(inc) + "\n"
                     await self.reply_text(update, message)  
                 
@@ -369,7 +393,7 @@ class ExpenseBot:
                 balance_data = balance_service.get_current_balance(user.id)
 
                 message = balance_message(balance_data)
-                
+                logging.info(f"Balance for User {user.id}: {balance_data}")
                 await self.reply_text(update, message)
                 
             except Exception as e:
@@ -388,6 +412,7 @@ class ExpenseBot:
                 balance_data = summary['balance']
 
                 message = summary_message(summary, balance_data)
+                logging.info(f"Summary for User {user.id}: {summary}")
                 await self.reply_text(update, message)                
             except Exception as e:
                 logging.error(f"Error in summary_command: {str(e)}")
