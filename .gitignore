@@ -239,9 +239,9 @@ expenses_test.db
 .env.test
 
 # Upload directories
-uploads/
-uploads/*
-receipts/
+files/
+files/*
+tickets/
 temp/
 temporary/
 

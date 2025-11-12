@@ -5,9 +5,7 @@ Configuration settings for the Expense Management App.
 import logging
 import os
 from dotenv import load_dotenv
-
 load_dotenv()
-
 class Config:
 
     """Base configuration class."""
@@ -17,9 +15,9 @@ class Config:
     TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
     # Upload settings
-    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', os.path.join('uploads', 'receipts'))
+    FILE_FOLDER = os.getenv('FILE_FOLDER', os.path.join('files', 'tickets'))
     MAX_CONTENT_LENGTH = os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)  # 16 MB
-    logging.info("Upload folder set to: %s", UPLOAD_FOLDER)
+    logging.info("Upload folder set to: %s", FILE_FOLDER)
     
     # OCR Settings
     OCR_LANGUAGES = ['es', 'en']  # Spanish and English support

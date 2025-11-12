@@ -1,5 +1,5 @@
 """
-Service layer for managing expenses and processing receipts.
+Service layer for managing expenses and processing tickets.
 """
 from app.models.expense import Expense
 from app.extensions import db
@@ -12,7 +12,7 @@ from app.config import Config
 from app.utils.helpers import parse_date
 
 class ExpenseService:
-    """Service for managing expenses and processing receipts."""
+    """Service for managing expenses and processing tickets."""
     
     @staticmethod
     def create_expense(data: Dict) -> Expense:
@@ -68,10 +68,10 @@ class ExpenseService:
         if not expense:
             return False
         
-        # Delete associated receipt file if exists
-        if expense.file_path and os.path.exists(expense.file_path):
+        # Delete associated ticket file if exists
+        if expense.file_name and os.path.exists(expense.file_name):
             try:
-                os.remove(expense.file_path)
+                os.remove(expense.file_name)
             except OSError:
                 pass  # File deletion failed, but continue with DB deletion
         
@@ -80,14 +80,14 @@ class ExpenseService:
         return True
     
     @staticmethod
-    def process_receipt_image(user_id: str, image_path: str, save_image: bool = True) -> Dict:
+    def process_ticket_image(user_id: str, image_path: str, save_image: bool = True) -> Dict:
         """
-        Process receipt image using OCR and return extracted data.
+        Process ticket image using OCR and return extracted data.
         
         Args:
             user_id: ID of the user
-            image_path: Path to the receipt image
-            save_image: Whether to save the image to uploads directory
+            image_path: Path to the ticket image
+            save_image: Whether to save the image to files directory
             
         Returns:
             Dictionary with extracted expense data
@@ -95,26 +95,26 @@ class ExpenseService:
         try:
             
             # Extract data using OCR
-            receipt_data = ocr_service.extract_receipt_data(image_path)
+            ticket_data = ocr_service.extract_ticket_data(image_path)
 
             # Prepare expense data
             expense_data = {
-                'payment_concept': receipt_data.get('payment_concept').upper() or 'RECEIPT',
-                'subtotal': receipt_data.get('subtotal') or 0.0,
-                'category': (receipt_data.get('category') or 'uncategorized').lower(),
-                'tax': receipt_data.get('tax') or 16,
-                'total': receipt_data.get('total') or 0.0,
-                'payment_date': parse_date(receipt_data.get('payment_date') or date.today()),
+                'payment_concept': ticket_data.get('payment_concept').upper() or 'ticket',
+                'subtotal': ticket_data.get('subtotal') or 0.0,
+                'category': (ticket_data.get('category') or 'uncategorized').lower(),
+                'tax': ticket_data.get('tax') or 16,
+                'total': ticket_data.get('total') or 0.0,
+                'payment_date': parse_date(ticket_data.get('payment_date') or date.today()),
                 'user_id': user_id
             }
 
             # Save image if requested
             if save_image:
-                saved_path = ExpenseService._save_receipt_image(image_path)
-                expense_data['file_path'] = saved_path
+                saved_path = ExpenseService._save_ticket_image(user_id, image_path)
+                expense_data['file_name'] = saved_path
 
             # Add raw OCR data for reference
-            # expense_data['ocr_data'] = receipt_data
+            # expense_data['ocr_data'] = ticket_data
             
             return expense_data
             
@@ -122,22 +122,24 @@ class ExpenseService:
             raise Exception(f"{str(e)}")
     
     @staticmethod
-    def _save_receipt_image(image_path: str) -> str:
-        """Save receipt image to uploads directory."""
+    def _save_ticket_image(user_id: str, image_path: str) -> str:
+        """Save ticket image to files directory."""
         import shutil
         from app.utils.helpers import generate_secure_filename
-        # Create uploads directory if it doesn't exist
-        upload_dir = Config.UPLOAD_FOLDER
-        os.makedirs(upload_dir, exist_ok=True)
+        # Create files directory if it doesn't exist
+        file_dir = Config.FILE_FOLDER
+        os.makedirs(file_dir, exist_ok=True)
 
-        # Generate secure filename with timestamp
-        filename = generate_secure_filename(os.path.basename(image_path))
-        destination_path = os.path.join(Config.UPLOAD_FOLDER, filename)
+        # Generate secure file_name with timestamp
+        file_name = generate_secure_filename(os.path.basename(image_path))
+        destination_dir = os.path.join(Config.FILE_FOLDER, user_id)
+        os.makedirs(destination_dir, exist_ok=True)
+        destination_path = os.path.join(destination_dir, file_name)
 
-        # Copy file to uploads directory
+        # Copy file to files directory
         shutil.copy2(image_path, destination_path)
         
-        return destination_path
+        return file_name
     
     @staticmethod
     def get_expense_statistics() -> Dict:

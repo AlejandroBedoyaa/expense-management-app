@@ -18,7 +18,7 @@ class Expense(db.Model):
     subtotal = Column(Float, default=0.0)
     tax = Column(Float, default=16)  # Tax/IVA percentage
     total = Column(Float, nullable=True)
-    file_path = Column(String(255), nullable=True)  # Path to receipt image
+    file_name = Column(String(255), nullable=True)
     payment_date = Column(Date, default=date.today)
     created_at = Column(DateTime, default=datetime.today())
     updated_at = Column(DateTime, default=datetime.today(), onupdate=datetime.today())
@@ -38,7 +38,7 @@ class Expense(db.Model):
             'subtotal': self.subtotal,
             'tax': self.tax,
             'total': self.total,
-            'file_path': self.file_path,
+            'file_name': self.file_name,
             'payment_date': self.payment_date.isoformat() if self.payment_date else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
@@ -55,7 +55,7 @@ class Expense(db.Model):
             subtotal=data.get('subtotal', 0.0),
             tax=data.get('tax', 16),
             total=data.get('total'),
-            file_path=data.get('file_path'),
+            file_name=data.get('file_name'),
             payment_date=data.get('payment_date', date.today()),
             created_at=data.get('created_at', datetime.today()),
             updated_at=data.get('updated_at', datetime.today()),

@@ -51,7 +51,7 @@ TELEGRAM_BOT_TOKEN=tu_token_de_telegram_aqui
 DATABASE_URL=mysql+pymysql://user:password@localhost:PORT/mydb
 LOG_BOT_FILE=logs/bot.log
 LOG_BOT_EXTERNAL_LIBS_FILE=logs/external_libs.log
-UPLOAD_FOLDER=uploads/receipts
+FILE_FOLDER=files/tickets
 MAX_CONTENT_LENGTH=16 * 1024 * 1024  # 16MB max file size
 ```
 
@@ -89,7 +89,7 @@ python bot.py
 
 - `GET /api/expenses` - Listar gastos
 - `POST /api/expenses` - Crear gasto
-- `POST /api/expenses/upload-receipt` - Subir recibo
+- `POST /api/expenses/upload-ticket` - Subir recibo
 - `GET /api/expenses/statistics` - Obtener estadísticas
 
 ## 📁 Estructura del Proyecto
@@ -119,7 +119,7 @@ expense-management-app/
 
 ### Configuración Opcional
 
-- `UPLOAD_FOLDER` - Directorio para recibos (default: uploads/receipts)
+- `FILE_FOLDER` - Directorio para recibos (default: files/tickets)
 - `MAX_CONTENT_LENGTH` - Tamaño máx. archivo (default: 16MB)
 
 ## 📊 Flujo de Trabajo

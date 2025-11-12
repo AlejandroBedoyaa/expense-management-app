@@ -2,12 +2,13 @@
 API routes for managing expenses.
 """
 import logging
-from flask import Blueprint, request, jsonify
+import uuid
+from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.services.expense_service import expense_service
-from werkzeug.utils import secure_filename
 import os
 import tempfile
+from app.config import Config
 
 expenses_bp = Blueprint('expenses', __name__)
 
@@ -166,14 +167,14 @@ def delete_expense(expense_id):
             'error': str(e)
         }), 500
 
-@expenses_bp.route('/expenses/upload-receipt', methods=['POST'])
+@expenses_bp.route('/expenses/upload-ticket', methods=['POST'])
 @jwt_required()
-def upload_receipt():
-    """Upload and process a receipt image."""
+def upload_ticket():
+    """Upload and process a ticket image."""
     try:
         user_id = get_jwt_identity()
         if 'file' not in request.files:
-            logging.info("No file uploaded for receipt processing.")
+            logging.info("No file uploaded for ticket processing.")
             return jsonify({
                 'success': False,
                 'error': 'No file uploaded'
@@ -181,39 +182,39 @@ def upload_receipt():
         
         file = request.files['file']
         
-        if file.filename == '':
-            logging.info("No file selected for receipt processing.")
+        if file.file_name == '':
+            logging.info("No file selected for ticket processing.")
             return jsonify({
                 'success': False,
                 'error': 'No file selected'
             }), 400
         
-        if not _allowed_file(file.filename):
-            logging.info(f"Invalid file type for receipt processing: {file.filename}")
+        if not _allowed_file(file.file_name):
+            logging.info(f"Invalid file type for ticket processing: {file.file_name}")
             return jsonify({
                 'success': False,
                 'error': 'Invalid file type. Allowed: jpg, jpeg, png, bmp, tiff'
             }), 400
         
         # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.file_name)[1]) as tmp_file:
             file.save(tmp_file.name)
             
-            # Process the receipt
-            expense_data = expense_service.process_receipt_image(tmp_file.name)
+            # Process the ticket
+            expense_data = expense_service.process_ticket_image(tmp_file.name)
             
             # Clean up temporary file
             os.unlink(tmp_file.name)
         
-        logging.info(f"Processed receipt image successfully: {file.filename}")
+        logging.info(f"Processed ticket image successfully: {file.file_name}")
         return jsonify({
             'success': True,
             'extracted_data': expense_data,
-            'message': 'Receipt processed successfully'
+            'message': 'ticket processed successfully'
         })
     
     except Exception as e:
-        logging.error(f"Error processing receipt image: {str(e)}")
+        logging.error(f"Error processing ticket image: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -237,9 +238,47 @@ def get_statistics():
             'success': False,
             'error': str(e)
         }), 500
+    
 
-def _allowed_file(filename):
+@expenses_bp.route("/file/ticket/<uuid:expense_id>", methods=['GET'])
+@jwt_required()
+def get_file(expense_id: uuid.UUID) -> str:
+    """Get the full file path for an uploaded file."""
+    try:
+        user_id = get_jwt_identity()   
+        expense = expense_service.get_expense_by_id(expense_id)
+        if not expense or not expense.file_name:
+            logging.info(f"File for expense ID {expense_id} not found.")
+            return jsonify({
+                'success': False,
+                'error': 'File not found'
+            }), 404
+        
+        if user_id != expense.user_id:
+            logging.info(f"Unauthorized access attempt by user {user_id} for expense ID {expense_id}.")
+            return jsonify({
+                'success': False,
+                'error': 'Unauthorized access'
+            }), 403
+        
+        files_path = os.path.join(Config.FILE_FOLDER, user_id)
+        user_file = os.path.join(files_path, expense.file_name)
+        file_rel_path = os.path.abspath(user_file)
+
+        print(os.path.abspath(os.path.join(Config.FILE_FOLDER, expense.file_name)))
+
+        return_file = send_file(file_rel_path)
+        logging.info(f"Retrieved file path successfully: {expense.file_name}")
+        return return_file
+    except Exception as e:
+        logging.error(f"Error retrieving file: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+def _allowed_file(file_name):
     """Check if uploaded file has allowed extension."""
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp', 'tiff', 'webp'}
-    return '.' in filename and \
-            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in file_name and \
+            file_name.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

@@ -12,7 +12,7 @@ def welcome_message(telegram_user_name: str) -> str:
 
 def help_message() -> str:
     message = """
-    📸 <b>Send a photo of your receipt</b>
+    📸 <b>Send a photo of your ticket</b>
     I will automatically extract the relevant information.
 
     📋 <b>Bot Commands:</b>
@@ -28,7 +28,7 @@ def help_message() -> str:
     /help - Show this help
 
     <b>How does it work?</b>
-    1. Take a clear photo of your receipt
+    1. Take a clear photo of your ticket
     2. Send it to the bot
     3. The bot will automatically extract the data
     4. It will be saved in your personal database
@@ -55,6 +55,7 @@ def edit_message() -> str:
     message = "Do you want to edit any details?\n"
     message += f"Send <b>/edit</b> &lt;field&gt; &lt;value&gt;\n"
     message += f"Send <b>/save</b> to confirm the data\n"
+    message += f"Send <b>/cancel</b> to discard changes"
 
     return message
 
@@ -154,8 +155,8 @@ def link_account_message(token: str) -> str:
 def handle_message() -> str:
     """Handle /help command."""
     message = """
-    📝 I can only process receipt images or valid commands.\n\n
-    📸 Please send a photo of your receipt or command, so I can assist you.\n
+    📝 I can only process ticket images or valid commands.\n\n
+    📸 Please send a photo of your ticket or command, so I can assist you.\n
     💡 Use /help to see all available commands.
     """
     return message

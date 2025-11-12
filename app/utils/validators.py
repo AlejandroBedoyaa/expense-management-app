@@ -82,12 +82,12 @@ def validate_date_string(date_str: str) -> bool:
     
     return False
 
-def validate_image_file(filename: str, max_size_mb: int = 10) -> Dict:
+def validate_image_file(file_name: str, max_size_mb: int = 10) -> Dict:
     """
     Validate image file.
     
     Args:
-        filename: Name of the file
+        file_name: Name of the file
         max_size_mb: Maximum allowed size in MB
         
     Returns:
@@ -95,13 +95,13 @@ def validate_image_file(filename: str, max_size_mb: int = 10) -> Dict:
     """
     errors = []
     
-    if not filename:
-        errors.append("Filename is required")
+    if not file_name:
+        errors.append("file_name is required")
         return {'valid': False, 'errors': errors}
     
     # Check extension
     allowed_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp']
-    file_ext = '.' + filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    file_ext = '.' + file_name.rsplit('.', 1)[-1].lower() if '.' in file_name else ''
     
     if file_ext not in allowed_extensions:
         errors.append(f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}")

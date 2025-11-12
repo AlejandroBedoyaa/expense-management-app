@@ -13,14 +13,15 @@ from typing import Dict, Any, List, Optional, Union
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from PIL import Image, ImageEnhance
+from app.config import Config
 
-def generate_secure_filename(original_filename: str) -> str:
-    """Generate a secure filename with timestamp."""
-    filename = secure_filename(original_filename)
+def generate_secure_filename(original_file_name: str) -> str:
+    """Generate a secure file_name with timestamp."""
+    file_name = secure_filename(original_file_name)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     random_suffix = secrets.token_hex(4)
     
-    name, ext = os.path.splitext(filename)
+    name, ext = os.path.splitext(file_name)
     return f"{timestamp}_{name}_{random_suffix}{ext}"
 
 def format_currency(amount: Union[int, float], currency: str = '$') -> str:
@@ -32,7 +33,7 @@ def format_tax(tax_rate: float = 16) -> str:
     return f"{tax_rate}%"
 
 def clean_image(image_path: str) -> str:
-    """Clean and preprocess the receipt image."""
+    """Clean and preprocess the ticket image."""
     img = Image.open(image_path)
     img = img.convert('L')  # white and black
     enhancer = ImageEnhance.Contrast(img)
@@ -122,12 +123,11 @@ def match_store(lines, store_keywords):
             return fuzzy_store, group
     return None, None
 
-# TODO: Not in use yet
-def get_upload_path(filename: str, subfolder: str = 'receipts') -> str:
+def get_upload_path(file: str) -> str:
     """Get full upload path for file."""
-    upload_dir = os.path.join(os.getcwd(), 'uploads', subfolder)
+    upload_dir = os.path.join(os.getcwd(), Config.FILE_FOLDER)
     os.makedirs(upload_dir, exist_ok=True)
-    return os.path.join(upload_dir, filename)
+    return os.path.join(file)
 
 # TODO: Not in use yet
 def calculate_tax_from_total(total: float, tax_rate: float = 0.16) -> Dict[str, float]:
@@ -214,7 +214,7 @@ def mask_sensitive_data(data: Dict[str, Any]) -> Dict[str, Any]:
 
 # TODO: Not in use yet
 def create_response(success: bool = True, data: Any = None, message: str = None, 
-                   error: str = None, status_code: int = 200) -> tuple:
+                    error: str = None, status_code: int = 200) -> tuple:
     """Create standardized API response."""
     response = {
         'success': success,

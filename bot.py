@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Telegram Bot for Expense Management
-Handles receipt image processing and expense creation via Telegram.
+Handles ticket image processing and expense creation via Telegram.
 
 Command to run:
     python bot.py
@@ -60,6 +60,7 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("edit", self.edit_command))
         self.app.add_handler(CommandHandler("save", self.save_command))
         self.app.add_handler(CommandHandler("list", self.list_command))
+        self.app.add_handler(CommandHandler("calncel", self.cancel_command))
         self.app.add_handler(MessageHandler(filters.PHOTO, self.handle_photo))
         self.app.add_handler(CommandHandler("expense", self.expense_command))
         self.app.add_handler(CommandHandler("income", self.income_command))
@@ -89,7 +90,7 @@ class ExpenseBot:
         telegram_user_id = update.effective_user.id
         args = context.args
         if telegram_user_id not in TEMP_EXPENSE:
-            await self.reply_text(update, "Nothing to edit, first send a receipt photo.")
+            await self.reply_text(update, "Nothing to edit, first send a ticket photo.")
             return
         if len(args) < 2:
             await self.reply_text(update, "Invalid format. Use: /edit &lt;field&gt; &lt;value&gt;")
@@ -121,7 +122,7 @@ class ExpenseBot:
     async def save_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user_id = update.effective_user.id
         if telegram_user_id not in TEMP_EXPENSE:
-            await self.reply_text(update, "Nothing to save, please upload a receipt first.")
+            await self.reply_text(update, "Nothing to save, please upload a ticket first.")
             return
 
         expense_data = TEMP_EXPENSE.pop(telegram_user_id)  # Remove after saving to avoid duplication
@@ -168,10 +169,18 @@ class ExpenseBot:
                 logging.error(f"Error retrieving expenses: {str(e)}")
                 await self.reply_text(update, f"❌ Error retrieving expenses: {str(e)}")
 
-    async def handle_photo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle photo messages - process receipt images."""
-        await self.reply_text(update, "📸 Image received. Processing receipt... ⏳")
+    async def cancel_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /cancel command to cancel ongoing expense entry."""
+        telegram_user_id = update.effective_user.id
+        if telegram_user_id in TEMP_EXPENSE:
+            TEMP_EXPENSE.pop(telegram_user_id)
+            await self.reply_text(update, "✅ Expense entry canceled.")
+        else:
+            await self.reply_text(update, "No ongoing expense entry to cancel.")
 
+    async def handle_photo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle photo messages - process ticket images."""
+        await self.reply_text(update, "📸 Image received. Processing ticket... ⏳")
 
         try:
             
@@ -191,17 +200,17 @@ class ExpenseBot:
                 delete_file(temp_path)
                 return
             
-            # Process receipt with Flask app context
+            # Process ticket with Flask app context
             with flask_app.app_context():
                 try:
                     # Get or create user
                     user = user_service.get_or_create_user(update)
 
-                    # Clean and preprocess the receipt image
+                    # Clean and preprocess the ticket image
                     # temp_path = clean_image(temp_path)
 
                     # Extract data using OCR
-                    expense_data = expense_service.process_receipt_image(user.id, temp_path)
+                    expense_data = expense_service.process_ticket_image(user.id, temp_path)
 
                     # Clean up temporary file
                     delete_file(temp_path)
@@ -220,8 +229,8 @@ class ExpenseBot:
                     
                 except Exception as e:
                     delete_file(temp_path)
-                    logging.error(f"Error processing receipt: {str(e)}")
-                    await self.reply_text(update, f"❌ Error processing receipt: {str(e)}")
+                    logging.error(f"Error processing ticket: {str(e)}")
+                    await self.reply_text(update, f"❌ Error processing ticket: {str(e)}")
                     
         except Exception as e:
             logging.error(f"Error downloading image: {str(e)}")
@@ -427,7 +436,7 @@ class ExpenseBot:
             try:
                 user = user_service.get_user_by_telegram_id(telegram_user_id)
                 if not user:
-                    message = "❌ You need to start using the bot first by sending a receipt image or valid command."
+                    message = "❌ You need to start using the bot first by sending a ticket image or valid command."
                     await self.reply_text(update, message)
                     return
                 if user.is_linked:

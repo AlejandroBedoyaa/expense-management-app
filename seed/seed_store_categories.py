@@ -19,7 +19,7 @@ load_dotenv()
 FLASK_ENV = os.getenv('FLASK_ENV', 'development')
 
 SEED_CATEGORIES = [
-    {'store_name': 'RECEIPT', 'category': 'uncategorized'}, # Default category
+    {'store_name': 'ticket', 'category': 'uncategorized'}, # Default category
     # Your custom store categories
     {'store_name': 'OXXO', 'category': 'conveniencia'},
     {'store_name': 'CHEDRAUI', 'category': 'supermercado'},

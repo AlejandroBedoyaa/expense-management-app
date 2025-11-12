@@ -1,5 +1,5 @@
 """
-OCR service for extracting text and data from receipt images using PaddleOCR.
+OCR service for extracting text and data from ticket images using PaddleOCR.
 """
 import logging
 import os
@@ -11,7 +11,7 @@ from app.services.story_category_service import StoreCategoryService
 from paddleocr import PaddleOCR
 
 class OCRService:
-    """Service for extracting text and data from receipt images using PaddleOCR."""
+    """Service for extracting text and data from ticket images using PaddleOCR."""
     
     def __init__(self, languages: List[str] = Config.OCR_LANGUAGES):
         """Initialize OCR service with specified languages."""
@@ -33,9 +33,9 @@ class OCRService:
         except Exception as e:
             raise Exception(f"{str(e)}")
     
-    def extract_receipt_data(self, image_path: str) -> Dict:
+    def extract_ticket_data(self, image_path: str) -> Dict:
         """
-        Extract structured data from receipt image.
+        Extract structured data from ticket image.
         Returns dictionary with extracted information.
         """
         try:
@@ -43,16 +43,16 @@ class OCRService:
             raw_text = self.extract_text(image_path)
             
             # Parse the text to extract structured data
-            receipt_data = self._parse_receipt_text(raw_text)
-            # receipt_data['raw_text'] = raw_text
-            # logging.info(f"Extracted receipt data: {receipt_data}")
-            return receipt_data
+            ticket_data = self._parse_ticket_text(raw_text)
+            # ticket_data['raw_text'] = raw_text
+            # logging.info(f"Extracted ticket data: {ticket_data}")
+            return ticket_data
             
         except Exception as e:
             raise Exception(f"{str(e)}")
 
-    def _parse_receipt_text(self, text: str) -> Dict:
-        """Parse raw OCR text to extract structured receipt information."""
+    def _parse_ticket_text(self, text: str) -> Dict:
+        """Parse raw OCR text to extract structured ticket information."""
         data = {
             'payment_concept': None,
             'category': None,

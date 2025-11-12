@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from app.extensions import db, migrate
 from app.config import config, Config
@@ -29,16 +29,27 @@ def create_app(config_name=None):
     
     # Register error handlers
     @app.errorhandler(404)
-    def not_found_error(error):
-        return {'error': 'Not found'}, 404
-    
+    def not_found(error):
+        return jsonify({'success': False, 'error': 'Resource not found'}), 404
+
+    @app.errorhandler(403)
+    def forbidden(error):
+        return jsonify({'success': False, 'error': 'Forbidden'}), 403
+
+    @app.errorhandler(401)
+    def unauthorized(error):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({'success': False, 'error': 'Bad request'}), 400
+
     @app.errorhandler(500)
     def internal_error(error):
-        db.session.rollback()
-        return {'error': 'Internal server error'}, 500
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
     
     # Create upload directories if they don't exist
-    os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(Config.FILE_FOLDER, exist_ok=True)
     CORS(app)
 
     return app
