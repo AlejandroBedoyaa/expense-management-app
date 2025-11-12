@@ -28,9 +28,12 @@ class IncomeService:
         return query.all()
 
     @staticmethod
-    def get_all_incomes() -> List[Income]:
+    def get_all_incomes(limit: int = None) -> List[Income]:
         """Get all incomes."""
-        return Income.query.order_by(Income.created_at.desc()).all()
+        query = Income.query.order_by(Income.created_at.desc())
+        if limit:
+            query = query.limit(limit)
+        return query.all()
     
     @staticmethod
     def update_income(income_id: str, data: Dict) -> Optional[Income]:

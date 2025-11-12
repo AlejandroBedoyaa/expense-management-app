@@ -2,14 +2,16 @@
 Helper utilities for the expense management application.
 """
 
+import hashlib
 import logging
 import os
 import re
 import secrets
 import difflib
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Dict, Any, List, Optional, Union
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from PIL import Image, ImageEnhance
 
 def generate_secure_filename(original_filename: str) -> str:
@@ -212,11 +214,11 @@ def mask_sensitive_data(data: Dict[str, Any]) -> Dict[str, Any]:
 
 # TODO: Not in use yet
 def create_response(success: bool = True, data: Any = None, message: str = None, 
-                    error: str = None, status_code: int = 200) -> tuple:
+                   error: str = None, status_code: int = 200) -> tuple:
     """Create standardized API response."""
     response = {
         'success': success,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': utc_now().isoformat()
     }
     
     if data is not None:
@@ -229,3 +231,120 @@ def create_response(success: bool = True, data: Any = None, message: str = None,
         response['error'] = error
     
     return response, status_code
+
+def utc_now() -> datetime:
+    """
+    Get current UTC datetime with timezone awareness.
+    
+    Returns:
+        Timezone-aware datetime object in UTC
+    """
+    return datetime.now(timezone.utc)
+
+def utc_timestamp() -> str:
+    """
+    Get current UTC timestamp as ISO string.
+    
+    Returns:
+        ISO format timestamp string
+    """
+    return utc_now().isoformat()
+
+def hash_password(password: str) -> str:
+    """
+    Hash a password using Werkzeug's secure password hashing.
+    
+    Args:
+        password: Plain text password to hash
+        
+    Returns:
+        Hashed password string
+    """
+    if not password:
+        raise ValueError("Password cannot be empty")
+    
+    return generate_password_hash(
+        password, 
+        method='pbkdf2:sha256',
+        salt_length=16
+    )
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """
+    Verify a password against its hash.
+    
+    Args:
+        password: Plain text password to verify
+        password_hash: Stored password hash
+        
+    Returns:
+        True if password matches hash, False otherwise
+    """
+    if not password or not password_hash:
+        return False
+    
+    return check_password_hash(password_hash, password)
+
+def generate_secure_token(length: int = 32) -> str:
+    """
+    Generate a secure random token.
+    
+    Args:
+        length: Length of token in bytes (default: 32)
+        
+    Returns:
+        URL-safe base64 encoded token
+    """
+    return secrets.token_urlsafe(length)
+
+def generate_vinculation_token() -> str:
+    """
+    Generate a secure token for account vinculation/linking.
+    
+    Returns:
+        6-character alphanumeric token (uppercase)
+    """
+    # Generate a 6-character token using secrets for cryptographic security
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    return ''.join(secrets.choice(alphabet) for _ in range(6))
+
+def hash_telegram_id(telegram_id: str) -> str:
+    """
+    Create a hash of Telegram ID for privacy/security.
+    
+    Args:
+        telegram_id: Telegram user ID as string
+        
+    Returns:
+        SHA256 hash of the Telegram ID
+    """
+    return hashlib.sha256(telegram_id.encode()).hexdigest()
+
+def to_datetime(value):
+    """Convert string or datetime to timezone-aware UTC datetime."""
+    if isinstance(value, datetime):
+        # Si ya es datetime pero es naive, asumimos que es UTC
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+    if isinstance(value, str):
+        try:
+            # Si el string viene en formato iso (ej: '2023-11-11T20:13:57.856980')
+            dt = datetime.fromisoformat(value)
+            # Si es naive, asumimos que es UTC
+            if dt.tzinfo is None:
+                return dt.replace(tzinfo=timezone.utc)
+            return dt
+        except ValueError:
+            # Si falla, puedes usar otra estrategia de parseo aquí, por ejemplo:
+            try:
+                # formato típico de SQL: '2023-11-11 20:13:57'
+                dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+                # Asumimos que es UTC
+                return dt.replace(tzinfo=timezone.utc)
+            except Exception:
+                pass
+        # Si no se puede convertir, regresa None o lanza error:
+        return None
+    # Si es None u otro tipo
+    return None

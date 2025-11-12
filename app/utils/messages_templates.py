@@ -2,6 +2,7 @@
 Message templates for the Expense Management Bot.
 """
 
+import os
 from app.utils.helpers import format_tax, format_currency
 
 def welcome_message(telegram_user_name: str) -> str:
@@ -18,10 +19,12 @@ def help_message() -> str:
     /edit - Edit the data: /edit &lt;field&gt; &lt;value&gt;
     /save - Confirm and save the last processed expense
     /list - List your saved expenses
-    /income - Add a new income entry: /income &lt;source&gt; &lt;amount&gt; &lt;description&gt; -r &lt;recurrence_type&gt; &lt;income_date&gt;
+    /expense - Add a new expense manually: /expense &lt;payment_concept&gt; &lt;category&gt; &lt;amount&gt; &lt;payment_date&gt; &lt;note&gt (Optional);
+    /income - Add a new income entry: /income &lt;source&gt; &lt;amount&gt; &lt;income_date&gt; (Optional) &lt;description&gt; (Optional)
     /incomes - List your income entries
     /balance - Show your current balance
     /summary - Show a summary of your expenses and incomes
+    /link-account - Link your Telegram account with the web app
     /help - Show this help
 
     <b>How does it work?</b>
@@ -41,7 +44,7 @@ def expense_message(data: dict) -> str:
         message += f"<b>note</b>: {data['note']}\n"
     else:
         message += f"<b>note</b>: --\n"
-    message += f"<b>date</b>: {data['payment_date']}\n"
+    message += f"<b>payment_date</b>: {data['payment_date']}\n"
     message += f"<b>subtotal</b>: {format_currency(data['subtotal'])}\n"
     message += f"<b>tax</b>: {format_tax(data['tax'])}\n"
     message += f"<b>total</b>: {format_currency(data['total'])}\n"
@@ -75,7 +78,7 @@ def income_help_message() -> str:
     message = """
     📥 <b>Add a new income entry</b>
     Use the command format:
-    /income &lt;source&gt; &lt;amount&gt; &lt;income_date&gt; &lt;description&gt;
+    /income &lt;source&gt; &lt;amount&gt; &lt;income_date&gt; (Optional) &lt;description&gt; (Optional)
 
     <b>Parameters:</b>
     - <b>source</b>: Source of the income (e.g., Salary, Freelance)
@@ -135,6 +138,16 @@ def summary_message(summary: dict, data: dict) -> str:
             percentage = (summary_data['total'] / data['total_expenses'] * 100) if data['total_expenses'] > 0 else 0
             message += f"  • {category.capitalize()}: ${summary_data['total']:,.2f} ({percentage:.1f}%)\n"
     
+
+    return message
+
+def link_account_message(token: str) -> str:
+    TOKEN_EXPIRATION_MINUTES = int(os.getenv('TOKEN_EXPIRATION_MINUTES', 15))
+    link_url = f"{os.getenv('DASHBOARD_URL')}/link-account?token={token}"
+    message = f"🔗 Use the following link to link your account:\n\n{link_url}"
+    message += "\n\nAlternatively, you can use the token below in the dashboard:"
+    message += f"\n\n<b>Token:</b> <code>{token}</code>"
+    message += f"\n\nThis link will expire in {TOKEN_EXPIRATION_MINUTES} minutes."
 
     return message
 

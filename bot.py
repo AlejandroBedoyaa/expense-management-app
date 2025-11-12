@@ -11,7 +11,7 @@ from multiprocessing import context
 from app.utils.logging_config import setup_logging
 setup_logging()
 import logging
-from telegram import Update
+from telegram import Update, User
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 import os
 import sys
@@ -19,6 +19,7 @@ import tempfile
 import asyncio
 from datetime import date, datetime
 from dotenv import load_dotenv
+import uuid
 
 # Import from our refactored structure
 from app import create_app
@@ -26,10 +27,10 @@ from app.services.expense_service import expense_service
 from app.services.user_service import user_service
 from app.services.income_service import income_service
 from app.services.balance_service import balance_service
-from app.utils.helpers import delete_file, clean_image, parse_date
+from app.utils.helpers import delete_file, clean_image, parse_date, utc_now
 from app.utils.validators import validate_image_file
 from app.utils.messages_templates import (income_command, income_help_message, welcome_message, help_message, expense_message,
-                                        edit_message, handle_message, balance_message, summary_message)
+                                        edit_message, handle_message, balance_message, summary_message, link_account_message)
 
 # Load environment variables
 load_dotenv()
@@ -65,6 +66,7 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("incomes", self.incomes_command))
         self.app.add_handler(CommandHandler("balance", self.balance_command))
         self.app.add_handler(CommandHandler("summary", self.summary_command))
+        self.app.add_handler(CommandHandler("link_account", self.link_account_command))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text))
     
     async def reply_text(self, update: Update, text: str, parse_mode: str = 'HTML'):
@@ -159,7 +161,7 @@ class ExpenseBot:
                 message = "📋 <b>Your Expenses:</b>\n\n"
                 logging.info(f"Expenses for User {user.id}: {expenses}")
                 for exp in expenses:
-                    message += f"• ID: {exp.id}, Concept: {exp.payment_concept}, Total: ${exp.total:.2f}, Date: {exp.payment_date}\n"
+                    message += f"• Concept: {exp.payment_concept}, Total: ${exp.total:.2f}, Date: {exp.payment_date}\n"
                 
                 await self.reply_text(update, message)
             except Exception as e:
@@ -417,6 +419,35 @@ class ExpenseBot:
             except Exception as e:
                 logging.error(f"Error in summary_command: {str(e)}")
                 await self.reply_text(update, "❌ Error to generate summary.")
+
+    async def link_account_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /link command."""
+        telegram_user_id = update.effective_user.id
+        with flask_app.app_context():
+            try:
+                user = user_service.get_user_by_telegram_id(telegram_user_id)
+                if not user:
+                    message = "❌ You need to start using the bot first by sending a receipt image or valid command."
+                    await self.reply_text(update, message)
+                    return
+                if user.is_linked:
+                    message = "❌ Your account is already linked, use your existing account."
+                    await self.reply_text(update, message)
+                    return
+
+                token = uuid.uuid4().hex
+                user.vinculation_token = token
+                user.vinculation_token_created = utc_now()
+                user_service.update_user(user.id, {
+                    "vinculation_token": user.vinculation_token,
+                    "vinculation_token_created": user.vinculation_token_created
+                })
+                message = link_account_message(token)
+                logging.info(f"Link token generated for User {user.id}: {token}")
+                await self.reply_text(update, message)
+            except Exception as e:
+                logging.error(f"Error generating link token: {str(e)}")
+                await self.reply_text(update, f"❌ Error generating link token: {str(e)}")
 
     async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages."""
