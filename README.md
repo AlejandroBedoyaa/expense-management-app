@@ -1,3 +1,5 @@
+TODO: Falta actualizar el README
+
 # 💰 Expense Management Bot
 
 Telegram bot para gestión automática de gastos usando OCR en recibos con API REST Flask.
