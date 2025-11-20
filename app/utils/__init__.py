@@ -9,7 +9,7 @@ from .helpers import (
 )
 from .messages_templates import (
     welcome_message, help_message, expense_message, edit_message, handle_message, income_command, income_help_message,
-    balance_message, summary_message, link_account_message
+    balance_message, summary_message, link_account_message, new_balance_message, expense_help_message, income_help_message
 )
 
 __all__ = [
@@ -21,5 +21,5 @@ __all__ = [
     'verify_password', 'generate_secure_token', 'generate_vinculation_token',
     'utc_now', 'utc_timestamp', 'to_datetime',
     'welcome_message', 'help_message', 'expense_message', 'edit_message', 'handle_message', 'income_command', 'income_help_message',
-    'balance_message', 'summary_message', 'link_account_message'
+    'balance_message', 'summary_message', 'link_account_message', 'new_balance_message', 'expense_help_message', 'income_help_message'
 ]

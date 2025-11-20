@@ -19,12 +19,12 @@ def help_message() -> str:
     /edit - Edit the data: /edit &lt;field&gt; &lt;value&gt;
     /save - Confirm and save the last processed expense
     /list - List your saved expenses
-    /expense - Add a new expense manually: /expense &lt;payment_concept&gt; &lt;category&gt; &lt;amount&gt; &lt;payment_date&gt; &lt;note&gt (Optional);
+    /expense - Add a new expense manually: /expense &lt;payment_concept&gt; &lt;amount&gt; &lt;payment_date&gt; &lt;category&gt; &lt;note&gt (Optional);
     /income - Add a new income entry: /income &lt;source&gt; &lt;amount&gt; &lt;income_date&gt; (Optional) &lt;description&gt; (Optional)
     /incomes - List your income entries
     /balance - Show your current balance
     /summary - Show a summary of your expenses and incomes
-    /link-account - Link your Telegram account with the web app
+    /link_account - Link your Telegram account with the web app
     /help - Show this help
 
     <b>How does it work?</b>
@@ -74,6 +74,25 @@ def income_command(data: dict) -> str:
 
     return message
 
+def expense_help_message() -> str:
+    """Help message for /expense command."""
+    message = """
+    📤 <b>Add a new expense manually</b>
+    Use the command format:
+    /expense &lt;payment_concept&gt; &lt;amount&gt; &lt;payment_date&gt; &lt;category&gt; &lt;note&gt; (Optional)
+
+    <b>Parameters:</b>
+    - <b>payment_concept</b>: Concept of the payment (e.g., LIVERPOOL, CHEDRAUI)
+    - <b>amount</b>: Total amount of the expense
+    - <b>payment_date</b>: Date of payment (DD-MM)
+    - <b>category</b>: Category of the expense (e.g., food, transport)
+    - <b>note</b>: (Optional) Additional note about the expense
+
+    <b>Example:</b>
+    /expense CHEDRAUI 600.75 12-11 supermercado "Super semanal"
+    """
+    return message
+
 def income_help_message() -> str:
     """Help message for /income command."""
     message = """
@@ -84,7 +103,7 @@ def income_help_message() -> str:
     <b>Parameters:</b>
     - <b>source</b>: Source of the income (e.g., Salary, Freelance)
     - <b>amount</b>: Amount received
-    - <b>income_date</b>: (Optional) Date of income (day of month for monthly, day of week for weekly/biweekly)
+    - <b>income_date</b>: (Optional) Date of income (DD-MM). Defaults to today if not provided
     - <b>description</b>: (Optional) Description of the income
 
     <b>Example:</b>
@@ -149,6 +168,15 @@ def link_account_message(token: str) -> str:
     message += "\n\nAlternatively, you can use the token below in the dashboard:"
     message += f"\n\n<b>Token:</b> <code>{token}</code>"
     message += f"\n\nThis link will expire in {TOKEN_EXPIRATION_MINUTES} minutes."
+
+    return message
+
+def new_balance_message(balance: float) -> str:
+    """Generate new balance message."""
+    if balance >= 0:
+        message = f"📈 Your new balance is: {format_currency(balance)}"
+    else:
+        message = f"⚠️ Your new balance is negative: {format_currency(balance)}"
 
     return message
 

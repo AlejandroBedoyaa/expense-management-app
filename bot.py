@@ -29,7 +29,7 @@ from app.services.income_service import income_service
 from app.services.balance_service import balance_service
 from app.utils.helpers import delete_file, clean_image, parse_date, utc_now
 from app.utils.validators import validate_image_file
-from app.utils.messages_templates import (income_command, income_help_message, welcome_message, help_message, expense_message,
+from app.utils.messages_templates import (expense_help_message, income_command, income_help_message, new_balance_message, welcome_message, help_message, expense_message,
                                         edit_message, handle_message, balance_message, summary_message, link_account_message)
 
 # Load environment variables
@@ -63,7 +63,9 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("calncel", self.cancel_command))
         self.app.add_handler(MessageHandler(filters.PHOTO, self.handle_photo))
         self.app.add_handler(CommandHandler("expense", self.expense_command))
+        self.app.add_handler(CommandHandler("help_expense", self.expense_help_command))
         self.app.add_handler(CommandHandler("income", self.income_command))
+        self.app.add_handler(CommandHandler("help_income", self.income_help_command))
         self.app.add_handler(CommandHandler("incomes", self.incomes_command))
         self.app.add_handler(CommandHandler("balance", self.balance_command))
         self.app.add_handler(CommandHandler("summary", self.summary_command))
@@ -140,8 +142,9 @@ class ExpenseBot:
                 user = user_service.get_user_by_telegram_id(str(telegram_user_id))
                 if user:
                     user_upd = user_service.update_accumulated_balance(user.id, -expense.total)
+                    message = new_balance_message(user_upd.accumulated_balance)
                     logging.info(f"Updated accumulated balance for User {user.id}")
-                    await self.reply_text(update, f"✅ New balance: {user_upd.accumulated_balance:.2f}.")
+                    await self.reply_text(update, message)
             except Exception as e:
                 logging.error(f"Error updating accumulated balance: {str(e)}")
                 await self.reply_text(update, f"❌ Error updating user accumulated balance: {str(e)}")
@@ -295,6 +298,11 @@ class ExpenseBot:
                 logging.error(f"Error saving expense: {str(e)}")
                 await self.reply_text(update, f"❌ Error saving expense: {str(e)}")
 
+    async def expense_help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /help_expense command."""
+        message = expense_help_message()
+        await self.reply_text(update, message)
+
     async def income_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /income command."""
         telegram_user_id = update.effective_user.id
@@ -361,11 +369,17 @@ class ExpenseBot:
                 user = user_service.get_user_by_telegram_id(str(telegram_user_id))
                 if user:
                     user_upd = user_service.update_accumulated_balance(user.id, amount)
+                    message = new_balance_message(user_upd.accumulated_balance)
                     logging.info(f"Updated accumulated balance for User {user.id}")
-                    await self.reply_text(update, f"✅ New balance: {user_upd.accumulated_balance:.2f}.")
+                    await self.reply_text(update, message)
             except Exception as e:
                 logging.error(f"Error updating accumulated balance: {str(e)}")
                 await self.reply_text(update, f"❌ Error updating user accumulated balance: {str(e)}")
+
+    async def income_help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /help_income command."""
+        message = income_help_message()
+        await self.reply_text(update, message)
 
     async def incomes_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /incomes command."""
@@ -436,7 +450,7 @@ class ExpenseBot:
             try:
                 user = user_service.get_user_by_telegram_id(telegram_user_id)
                 if not user:
-                    message = "❌ You need to start using the bot first by sending a ticket image or valid command."
+                    message = "❌ You need to start using the bot first by sending a ticket image or creating an expense/income."
                     await self.reply_text(update, message)
                     return
                 if user.is_linked:

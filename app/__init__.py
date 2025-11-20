@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from app.extensions import db, migrate
 from app.config import config, Config
-from app.api import expenses_bp, incomes_bp, users_bp
+from app.api import expenses_bp, incomes_bp, users_bp, balances_bp
 import os
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
@@ -26,6 +26,7 @@ def create_app(config_name=None):
     app.register_blueprint(expenses_bp, url_prefix='/api')
     app.register_blueprint(incomes_bp, url_prefix='/api')
     app.register_blueprint(users_bp, url_prefix='/api')
+    app.register_blueprint(balances_bp, url_prefix='/api')
     
     # Register error handlers
     @app.errorhandler(404)

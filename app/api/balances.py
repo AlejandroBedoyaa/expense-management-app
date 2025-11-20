@@ -6,10 +6,10 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.services.balance_service import balance_service
 
-balance_bp = Blueprint('balance', __name__)
+balances_bp = Blueprint('balances', __name__)
 
 
-@balance_bp.route('/balance/current', methods=['GET'])
+@balances_bp.route('/balance/current', methods=['GET'])
 @jwt_required()
 def get_current_balance():
     """Get current month balance for user."""
@@ -39,7 +39,7 @@ def get_current_balance():
         }), 500
 
 
-@balance_bp.route('/balance/monthly', methods=['GET'])
+@balances_bp.route('/balance/monthly', methods=['GET'])
 @jwt_required()
 def get_monthly_balance():
     """Get balance for specific month."""
@@ -71,7 +71,7 @@ def get_monthly_balance():
         }), 500
 
 
-@balance_bp.route('/balance/summary', methods=['GET'])
+@balances_bp.route('/balance/summary', methods=['GET'])
 @jwt_required()
 def get_summary():
     """Get financial summary."""
