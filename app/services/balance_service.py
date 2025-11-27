@@ -147,6 +147,62 @@ class BalanceService:
         except Exception as e:
             logger.error(f"Error getting financial summary: {str(e)}")
             raise
+    
+    def get_daily_balance_chart(self, user_id):
+        """Get daily income and expense data for chart visualization (last 3 months)."""
+        try:
+            from dateutil.relativedelta import relativedelta
+            
+            # Calculate date range: 3 months ago to today
+            end_date = date.today()
+            start_date = end_date - relativedelta(months=3)
+            
+            # Get all incomes for the period
+            incomes = Income.query.filter(
+                Income.user_id == user_id,
+                Income.income_date >= start_date,
+                Income.income_date <= end_date
+            ).all()
+            
+            # Get all expenses for the period
+            expenses = Expense.query.filter(
+                Expense.user_id == user_id,
+                Expense.payment_date >= start_date,
+                Expense.payment_date <= end_date
+            ).all()
+            
+            # Create dictionary to aggregate by date
+            daily_data = {}
+            
+            # Aggregate incomes by date
+            for income in incomes:
+                date_key = income.income_date.strftime('%Y-%m-%d')
+                if date_key not in daily_data:
+                    daily_data[date_key] = {'income': 0.0, 'expense': 0.0}
+                daily_data[date_key]['income'] += income.amount
+            
+            # Aggregate expenses by date
+            for expense in expenses:
+                date_key = expense.payment_date.strftime('%Y-%m-%d')
+                if date_key not in daily_data:
+                    daily_data[date_key] = {'income': 0.0, 'expense': 0.0}
+                daily_data[date_key]['expense'] += expense.total
+            
+            # Convert to list format sorted by date
+            chart_data = [
+                {
+                    'date': date_str,
+                    'income': round(values['income'], 2),
+                    'expense': round(values['expense'], 2)
+                }
+                for date_str, values in sorted(daily_data.items())
+            ]
+            
+            return chart_data
+            
+        except Exception as e:
+            logger.error(f"Error getting daily balance chart: {str(e)}")
+            raise
 
 
 # Singleton instance

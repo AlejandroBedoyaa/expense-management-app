@@ -54,7 +54,7 @@ def get_monthly_balance():
                 'success': False,
                 'error': 'user_id is required'
             }), 400
-        
+
         balance = balance_service.get_monthly_balance(user_id, month, year)
         
         logging.info(f"Retrieved monthly balance for user_id {user_id}, month {month}, year {year} successfully.")
@@ -95,6 +95,36 @@ def get_summary():
     
     except Exception as e:
         logging.error(f"Error retrieving financial summary for user_id {user_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@balances_bp.route('/balance/chart', methods=['GET'])
+@jwt_required()
+def get_daily_balance_chart():
+    """Get daily income and expense data for chart visualization (last 3 months)."""
+    try:
+        user_id = get_jwt_identity()
+        
+        if not user_id:
+            logging.info("user_id is required for getting balance chart data.")
+            return jsonify({
+                'success': False,
+                'error': 'user_id is required'
+            }), 400
+        
+        chart_data = balance_service.get_daily_balance_chart(user_id)
+        
+        logging.info(f"Retrieved balance chart data for user_id {user_id} successfully.")
+        return jsonify({
+            'success': True,
+            'data': chart_data
+        })
+    
+    except Exception as e:
+        logging.error(f"Error retrieving balance chart data for user_id {user_id}: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

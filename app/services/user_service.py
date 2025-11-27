@@ -48,6 +48,11 @@ class UserService:
         return user
     
     @staticmethod
+    def get_user_by_id(user_id: str) -> User:
+        """Retrieve a user by their ID."""
+        return User.query.get(user_id)
+    
+    @staticmethod
     def update_user(user_id: str, data: Dict) -> User:
         """Update an existing user."""
         user = User.query.get(user_id)

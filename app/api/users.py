@@ -127,6 +127,46 @@ def login():
             'error': str(e)
         }), 500
 
+@users_bp.route("/refresh", methods=["POST"])
+@jwt_required()
+def refresh():
+    """Refresh access token."""
+    try:
+        user_id = get_jwt_identity()
+        
+        # Verify user still exists and is active
+        user = user_service.get_user_by_id(user_id)
+        if not user:
+            logging.info(f"Token refresh attempt for non-existent user: {user_id}")
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        if not user.is_linked:
+            logging.info(f"Token refresh attempt for unlinked account: {user_id}")
+            return jsonify({
+                'success': False,
+                'error': 'Account not linked'
+            }), 401
+        
+        # Create new access token
+        new_access_token = create_access_token(identity=user_id)
+        
+        logging.info(f"Token refreshed successfully for user: {user_id}")
+        return jsonify({
+            'success': True,
+            'message': 'Token refreshed successfully',
+            'access_token': new_access_token
+        })
+    
+    except Exception as e:
+        logging.error(f"Error refreshing token: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @users_bp.route("/change-password", methods=["POST"]) 
 @jwt_required()
 def change_password():
@@ -170,3 +210,4 @@ def change_password():
             'success': False,
             'error': str(e)
         }), 500
+

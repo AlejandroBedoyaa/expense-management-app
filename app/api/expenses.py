@@ -34,7 +34,7 @@ def get_expenses():
             'error': str(e)
         }), 500
 
-@expenses_bp.route('/expenses/<int:expense_id>', methods=['GET'])
+@expenses_bp.route('/expenses/<string:expense_id>', methods=['GET'])
 @jwt_required()
 def get_expense(expense_id):
     """Get a specific expense by ID."""
@@ -102,7 +102,7 @@ def create_expense():
             'error': str(e)
         }), 500
 
-@expenses_bp.route('/expenses/<int:expense_id>', methods=['PUT'])
+@expenses_bp.route('/expenses/<string:expense_id>', methods=['PUT'])
 @jwt_required()
 def update_expense(expense_id):
     """Update an existing expense."""
@@ -139,7 +139,7 @@ def update_expense(expense_id):
             'error': str(e)
         }), 500
 
-@expenses_bp.route('/expenses/<int:expense_id>', methods=['DELETE'])
+@expenses_bp.route('/expenses/<string:expense_id>', methods=['DELETE'])
 @jwt_required()
 def delete_expense(expense_id):
     """Delete an expense."""
@@ -272,6 +272,24 @@ def get_file(expense_id: uuid.UUID) -> str:
         return return_file
     except Exception as e:
         logging.error(f"Error retrieving file: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+    
+@expenses_bp.route("/expenses/monthly", methods=['GET'])
+@jwt_required()
+def get_monthly_expenses():
+    """Get total expense amounts grouped by month for the current user."""
+    try:
+        user_id = get_jwt_identity()
+        monthly_expenses = expense_service.get_monthly_expenses(user_id)
+        
+        return jsonify({
+            'success': True,
+            'monthly_expenses': monthly_expenses
+        })
+    except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e)

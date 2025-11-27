@@ -27,3 +27,49 @@ def get_incomes():
             'success': False,
             'error': str(e)
         }), 500
+
+@incomes_bp.route("/incomes/monthly", methods=['GET'])
+@jwt_required()
+def get_monthly_incomes():
+    """Get total income amounts grouped by month for the current user."""
+    try:
+        user_id = get_jwt_identity()
+        monthly_incomes = income_service.get_monthly_incomes(user_id)
+        
+        return jsonify({
+            'success': True,
+            'monthly_incomes': monthly_incomes
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+    
+@incomes_bp.route('/incomes/<string:income_id>', methods=['DELETE'])
+@jwt_required()
+def delete_income(income_id):
+    """Delete an income."""
+    try:
+        user_id = get_jwt_identity()
+        
+        success = income_service.delete_income(income_id)
+        if not success:
+            logging.info(f"Income with ID {income_id} not found for deletion.")
+            return jsonify({
+                'success': False,
+                'error': 'Income not found'
+            }), 404
+        
+        logging.info(f"Deleted income with ID {income_id} successfully.")
+        return jsonify({
+            'success': True,
+            'message': 'Income deleted successfully'
+        })
+    
+    except Exception as e:
+        logging.error(f"Error deleting income with ID {income_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

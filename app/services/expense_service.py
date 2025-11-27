@@ -181,6 +181,102 @@ class ExpenseService:
             'monthly_totals': monthly_totals
         }
 
+    @staticmethod
+    def get_expenses_summary(user_id: str) -> Dict:
+        """Get a summary of expenses for a user."""
+        expenses = Expense.query.filter_by(user_id=user_id).all()
+        
+        if not expenses:
+            return {
+                'total_expenses': 0,
+                'total_amount': 0.0,
+                'monthly_totals': {}
+            }
+        
+        total_amount = sum(expense.total for expense in expenses)
+        
+        # Group by month
+        monthly_totals = {}
+        for expense in expenses:
+            if expense.created_at:
+                month_key = expense.created_at.strftime('%Y-%m')
+                if month_key not in monthly_totals:
+                    monthly_totals[month_key] = 0.0
+                monthly_totals[month_key] += expense.total
+        
+        return {
+            'total_expenses': len(expenses),
+            'total_amount': total_amount,
+            'monthly_totals': monthly_totals
+        }
 
+    @staticmethod
+    def get_monthly_expenses(user_id: str) -> Dict:
+        """Get total expense amount for current month with comparison to previous month."""
+        # Month names
+        month_names = {
+            1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr',
+            5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug',
+            9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+        }
+        
+        today = date.today()
+        current_month = today.month
+        current_year = today.year
+        
+        # Calculate current month date range
+        current_start_date = date(current_year, current_month, 1)
+        if current_month == 12:
+            current_end_date = date(current_year + 1, 1, 1)
+        else:
+            current_end_date = date(current_year, current_month + 1, 1)
+
+        # Get current month expenses
+        current_monthly_expenses = Expense.query.filter(
+            Expense.user_id == user_id,
+            Expense.payment_date >= current_start_date,
+            Expense.payment_date < current_end_date
+        ).all()
+        
+        current_total = sum(expense.total for expense in current_monthly_expenses)
+        
+        # Calculate previous month date range
+        if current_month == 1:
+            previous_month = 12
+            previous_year = current_year - 1
+        else:
+            previous_month = current_month - 1
+            previous_year = current_year
+            
+        previous_start_date = date(previous_year, previous_month, 1)
+        if previous_month == 12:
+            previous_end_date = date(previous_year + 1, 1, 1)
+        else:
+            previous_end_date = date(previous_year, previous_month + 1, 1)
+        
+        # Get previous month expenses
+        previous_monthly_expenses = Expense.query.filter(
+            Expense.user_id == user_id,
+            Expense.payment_date >= previous_start_date,
+            Expense.payment_date < previous_end_date
+        ).all()
+        
+        previous_total = sum(expense.total for expense in previous_monthly_expenses)
+        
+        # Calculate percentage change
+        if previous_total > 0:
+            percentage_change = ((current_total - previous_total) / previous_total) * 100
+        else:
+            percentage_change = 0.0 if current_total == 0 else 100.0
+        
+        return {
+            'month': month_names.get(current_month, ''),
+            'year': current_year,
+            'total_expenses': round(current_total, 2),
+            'previous_month_total': round(previous_total, 2),
+            'percentage_change': round(percentage_change, 2),
+            'improvement': percentage_change < 0  # True if spending decreased
+        }
+    
 # Create service instance
 expense_service = ExpenseService()

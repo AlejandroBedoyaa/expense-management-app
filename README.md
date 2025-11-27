@@ -98,6 +98,8 @@ python bot.py
 | `/save` | Save extracted data |
 | Send photo | Process image |
 
+Falta añadir los demas comandos
+
 ## 🔗 API Endpoints
 
 - TODO
