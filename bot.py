@@ -474,7 +474,7 @@ class ExpenseBot:
                 await self.reply_text(update, f"❌ Error generating link token: {str(e)}")
 
     async def dashboard_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /dashboard command help."""
+        """Handle /dashboard command."""
         message = dashboard_message()
         await self.reply_text(update, message)
 
