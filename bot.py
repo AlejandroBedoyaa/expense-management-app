@@ -70,7 +70,7 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("balance", self.balance_command))
         self.app.add_handler(CommandHandler("summary", self.summary_command))
         self.app.add_handler(CommandHandler("link_account", self.link_account_command))
-        self.app.add_handler(CommandHandler("dashboard", self.link_account_command))
+        self.app.add_handler(CommandHandler("dashboard", self.dashboard_command))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text))
     
     async def reply_text(self, update: Update, text: str, parse_mode: str = 'HTML'):
