@@ -187,7 +187,6 @@ def dashboard_message() -> str:
     """Generate dashboard access message."""
     dashboard_url = os.getenv('DASHBOARD_URL')
     message = f"🌐 Access your dashboard here: {dashboard_url}\n"
-    message += "Manage your expenses and incomes with ease!"
 
     return message
 
