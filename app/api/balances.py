@@ -9,30 +9,30 @@ from app.services.balance_service import balance_service
 balances_bp = Blueprint('balances', __name__)
 
 
-@balances_bp.route('/balance/current', methods=['GET'])
+@balances_bp.route('/balance/total', methods=['GET'])
 @jwt_required()
-def get_current_balance():
-    """Get current month balance for user."""
+def get_total_balance():
+    """Get total balance for user."""
     try:
         user_id = get_jwt_identity()
         
         if not user_id:
-            logging.info("user_id is required for getting current balance.")
+            logging.info("user_id is required for getting total balance.")
             return jsonify({
                 'success': False,
                 'error': 'user_id is required'
             }), 400
         
-        balance = balance_service.get_current_balance(user_id)
+        balance = balance_service.get_total_balance(user_id)
         
-        logging.info(f"Retrieved current balance for user_id {user_id} successfully.")
+        logging.info(f"Retrieved total balance for user_id {user_id} successfully.")
         return jsonify({
             'success': True,
             'balance': balance
         })
     
     except Exception as e:
-        logging.error(f"Error retrieving current balance for user_id {user_id}: {str(e)}")
+        logging.error(f"Error retrieving total balance for user_id {user_id}: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

@@ -416,7 +416,7 @@ class ExpenseBot:
             try:
                 user = user_service.get_or_create_user(update)
                 
-                balance_data = balance_service.get_current_balance(user.id)
+                balance_data = balance_service.get_monthly_balance(user.id)
 
                 message = balance_message(balance_data)
                 logging.info(f"Balance for User {user.id}: {balance_data}")

@@ -59,11 +59,6 @@ class BalanceService:
             logger.error(f"Error calculating monthly balance: {str(e)}")
             raise
     
-    def get_current_balance(self, user_id):
-        """Get balance for current month."""
-        today = date.today()
-        return self.get_monthly_balance(user_id, today.month, today.year)
-    
     def get_total_balance(self, user_id):
         """
         Calculate total balance (all time).
@@ -80,9 +75,7 @@ class BalanceService:
             balance = income_sum - expense_sum
             
             return {
-                'total_incomes': income_sum,
-                'total_expenses': expense_sum,
-                'balance': balance
+                'total_balance': balance
             }
             
         except Exception as e:
@@ -129,7 +122,7 @@ class BalanceService:
     def get_financial_summary(self, user_id):
         """Get comprehensive financial summary for current month."""
         try:
-            current = self.get_current_balance(user_id)
+            current = self.get_monthly_balance(user_id)
             categories = self.get_category_expenses(user_id)
             
             sorted_categories = sorted(
