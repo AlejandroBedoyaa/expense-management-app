@@ -59,7 +59,7 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("help", self.help_command))
         self.app.add_handler(CommandHandler("edit", self.edit_command))
         self.app.add_handler(CommandHandler("save", self.save_command))
-        self.app.add_handler(CommandHandler("expenses", self.list_command))
+        self.app.add_handler(CommandHandler("expenses", self.expenses_command))
         self.app.add_handler(CommandHandler("cancel", self.cancel_command))
         self.app.add_handler(MessageHandler(filters.PHOTO, self.handle_photo))
         self.app.add_handler(CommandHandler("expense", self.expense_command))
@@ -150,7 +150,7 @@ class ExpenseBot:
                 logging.error(f"Error updating accumulated balance: {str(e)}")
                 await self.reply_text(update, f"❌ Error updating user accumulated balance: {str(e)}")
 
-    async def list_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def expenses_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user_id = update.effective_user.id
         with flask_app.app_context():
             try:
