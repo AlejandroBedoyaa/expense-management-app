@@ -18,7 +18,7 @@ def help_message() -> str:
     📋 <b>Bot Commands:</b>
     /edit - Edit the data: /edit &lt;field&gt; &lt;value&gt;
     /save - Confirm and save the last processed expense
-    /list - List your saved expenses
+    /expenses - List your saved expenses
     /expense - Add a new expense manually: /expense &lt;payment_concept&gt; &lt;amount&gt; &lt;payment_date&gt; &lt;category&gt; &lt;note&gt (Optional);
     /income - Add a new income entry: /income &lt;source&gt; &lt;amount&gt; &lt;income_date&gt; (Optional) &lt;description&gt; (Optional)
     /incomes - List your income entries
@@ -26,6 +26,9 @@ def help_message() -> str:
     /summary - Show a summary of your expenses and incomes
     /link_account - Link your Telegram account with the web app
     /help - Show this help
+    /help_expense - Help for /expense command
+    /help_income - Help for /income command
+    /dashboard - Access your dashboard
 
     <b>How does it work?</b>
     1. Take a clear photo of your ticket
@@ -177,6 +180,14 @@ def new_balance_message(balance: float) -> str:
         message = f"📈 Your new balance is: {format_currency(balance)}"
     else:
         message = f"⚠️ Your new balance is negative: {format_currency(balance)}"
+
+    return message
+
+def dashboard_message() -> str:
+    """Generate dashboard access message."""
+    dashboard_url = os.getenv('DASHBOARD_URL')
+    message = f"🌐 Access your dashboard here: {dashboard_url}\n"
+    message += "Manage your expenses and incomes with ease!"
 
     return message
 

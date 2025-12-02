@@ -29,7 +29,7 @@ from app.services.income_service import income_service
 from app.services.balance_service import balance_service
 from app.utils.helpers import delete_file, clean_image, parse_date, utc_now
 from app.utils.validators import validate_image_file
-from app.utils.messages_templates import (expense_help_message, income_command, income_help_message, new_balance_message, welcome_message, help_message, expense_message,
+from app.utils.messages_templates import (dashboard_message, expense_help_message, income_command, income_help_message, new_balance_message, welcome_message, help_message, expense_message,
                                         edit_message, handle_message, balance_message, summary_message, link_account_message)
 
 # Load environment variables
@@ -59,8 +59,8 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("help", self.help_command))
         self.app.add_handler(CommandHandler("edit", self.edit_command))
         self.app.add_handler(CommandHandler("save", self.save_command))
-        self.app.add_handler(CommandHandler("list", self.list_command))
-        self.app.add_handler(CommandHandler("calncel", self.cancel_command))
+        self.app.add_handler(CommandHandler("expenses", self.list_command))
+        self.app.add_handler(CommandHandler("cancel", self.cancel_command))
         self.app.add_handler(MessageHandler(filters.PHOTO, self.handle_photo))
         self.app.add_handler(CommandHandler("expense", self.expense_command))
         self.app.add_handler(CommandHandler("help_expense", self.expense_help_command))
@@ -70,6 +70,7 @@ class ExpenseBot:
         self.app.add_handler(CommandHandler("balance", self.balance_command))
         self.app.add_handler(CommandHandler("summary", self.summary_command))
         self.app.add_handler(CommandHandler("link_account", self.link_account_command))
+        self.app.add_handler(CommandHandler("dashboard", self.link_account_command))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text))
     
     async def reply_text(self, update: Update, text: str, parse_mode: str = 'HTML'):
@@ -471,6 +472,11 @@ class ExpenseBot:
             except Exception as e:
                 logging.error(f"Error generating link token: {str(e)}")
                 await self.reply_text(update, f"❌ Error generating link token: {str(e)}")
+
+    async def dashboard_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /dashboard command."""
+        message = dashboard_message()
+        await self.reply_text(update, message)
 
     async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages."""
